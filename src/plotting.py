@@ -8,11 +8,21 @@ class NNPlots:
         self.test_x = test_x
         self.test_y = test_y
         self.true_u = true_u
+
         self.x = x
         self.y = y
         self.pred_u = pred_u
+
         self.x_limits = x_limits
         self.y_limits = y_limits
+
+    @staticmethod
+    def plotLoss(train_loss):
+        plt.figure(figsize=(10, 8))
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.plot(train_loss)
+        plt.show()
 
     def plot3d(self):
         """
