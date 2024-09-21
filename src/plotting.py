@@ -34,7 +34,7 @@ class NNPlots:
             self.test_x,
             self.test_y,
             self.true_u,
-            edgecolor="royalblue",
+            edgecolor="black",
             lw=0.5,
             rstride=8,
             cstride=8,
@@ -59,7 +59,7 @@ class NNPlots:
         # ax.scatter(x, y, train_u, s=0.5, label="train")
         ax.legend(fontsize=15)
         ax.set(
-            xlim=self.x_limits, ylim=self.y_limits, xlabel="X", ylabel="Y", zlabel="Z"
+            xlim=self.x_limits, ylim=self.y_limits, xlabel="X", ylabel="Y", zlabel="U"
         )
 
     def plot2d_contour(
@@ -129,7 +129,7 @@ class NNPlots:
         If no value is provided for x_i, the function randomly selects an index within the valid range.
         """
         if x_i == None:
-            x_i = random.randint(0, self.grid_size[0] - 1)
+            x_i = random.randint(0, len(self.x[0]) - 1)
         fig1 = plt.figure()
         flat = fig1.add_subplot()
         flat.plot(
@@ -143,6 +143,11 @@ class NNPlots:
             label="real",
         )
         flat.legend(fontsize=15)
+        flat.set(
+            title=f"U-vales with fixed x={round(self.x[0, x_i], 2)}",
+            xlabel="Y",
+            ylabel="U",
+        )
 
 
 if __name__ == ("__main__"):
@@ -167,4 +172,4 @@ if __name__ == ("__main__"):
     pred_coord = list()
     pred_u = true_u
     plotter = NNPlots(test_x, test_y, true_u, x, y, pred_u, x_limits, y_limits)
-    plotter.plot2d_contour()
+    plotter.plot3d()
