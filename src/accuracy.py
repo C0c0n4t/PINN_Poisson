@@ -4,19 +4,28 @@ import numpy as np
 class AccuracyCalc:
     EPSILON = 1e-10
 
-    def __init__(self, model, real_function, dataset):
+    """
+    Area isn't passed as an argument in this class,
+    it's like a state of an object
+    """
+
+    def __init__(self, model, actual_function: callable, area: np.array = None):
         self._model = model
-        self._real_function = real_function
-        self._dataset = dataset
-        self._area = None
+        self._actual_function = actual_function
+
+        self._area = area
+        self._predicted_val = self._model.predict(self._area)
+        self._actual_val = self._actual_function(self._area)
 
     @property
-    def area(self, area: np.array):  # like getter
+    def area(self):  # like getter
         return self._area
 
     @area.setter
     def area(self, area: np.array):  # like setter
         self._area = area
+        self._predicted_val = self._model.predict(self._area)
+        self._actual_val = self._actual_function(self._area)
 
     def _to_percent(error_function):
         def wrapper_to_percent(*args, **kwargs):
@@ -25,49 +34,51 @@ class AccuracyCalc:
         return wrapper_to_percent
 
     @_to_percent
-    def good_perc_rel(self, area: np.ndarray | None, rel_dis: float):
+    def good_perc_rel(self, rel_dis: float):
         """
         Percent of close values, by relative distance
         """
-        if area.isinstance(None):
-            return np.sum(
-                np.isclose(
-                    self._model(self._area),
-                    self._real_function(self._area),
-                    rtol=rel_dis,
-                )
-            ) / len(self._area)
-        else:
-            return np.sum(
-                np.isclose(self._model(area), self._real_function(area), rtol=rel_dis)
-            ) / len(area)
+        return np.sum(
+            np.isclose(self._predicted_val, self._actual_val, rtol=rel_dis)
+        ) / len(self._area)
 
-    # @_to_percent
-    # def good_perc_abs(actual: np.ndarray, predicted: np.ndarray):
-    #     """
-    #     Percent of close values, by absolute distance
-    #     """
-    #     return np.sum(np.isclose(predicted, actual, atol=0.1)) / len(total_predictions)
+    @_to_percent
+    def good_perc_abs(self, abs_dis: float):
+        """
+        Percent of close values, by absolute distance
+        """
+        return np.sum(
+            np.isclose(self._predicted_val, self._actual_val, atol=abs_dis)
+        ) / len(self._area)
 
-    # @_to_percent
-    # # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5570302/
-    # def ve_acc(actual: np.ndarray, predicted: np.ndarray):
-    #     """
-    #     Variance Explained Accuracy
-    #     """
-    #     return 1 - np.sum(np.square(actual - predicted)) / np.sum(np.square(actual - np.mean(actual)))
+    @_to_percent
+    # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5570302/
+    def ve_acc(self):
+        """
+        Variance Explained Accuracy
+        """
+        mean = np.mean(self._actual_val)
+        return 1 - \
+            np.sum(np.square(self._actual_val - self._predicted_val)) /\
+            np.sum(np.square(self._actual_val - mean))
 
-    # def maape(actual: np.ndarray, predicted: np.ndarray):
-    #     """
-    #     Mean Arctangent Absolute Percentage Error
-    #     Note: result is NOT multiplied by 100
-    #     """
-    #     return np.mean(np.arctan(np.abs((actual - predicted) / (actual + EPSILON))))
+    def maape(self):
+        """
+        Mean Arctangent Absolute Percentage Error
+        Note: result is NOT multiplied by 100
+        """
+        return np.mean(np.arctan(
+            np.abs((self._actual_val - self._predicted_val) /
+                   (self._actual_val + AccuracyCalc.EPSILON))))
 
-    def mse(actual: np.ndarray, predicted: np.ndarray):
+    def mse(self):
         """
         Mean Squared Error
         """
-        return np.mean(np.square(actual - predicted))
+        return np.mean(np.square(self._actual_val - self._predicted_val))
 
-    # def maxe()
+    def maxe(self):
+        """
+        Maximum Error
+        """
+        return np.max(np.abs(self._actual_val - self._predicted_val))
