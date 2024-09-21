@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import random
 import numpy as np
+import time
 
 
 class NNPlots:
@@ -61,6 +62,67 @@ class NNPlots:
             xlim=self.x_limits, ylim=self.y_limits, xlabel="X", ylabel="Y", zlabel="Z"
         )
 
+    def plot2d_contour(
+        self, color_map="coolwarm", contour_levels=15, linestyle="dashed"
+    ):
+        """
+        This function creates a 2D contour plot of the real and predicted u-values.
+        """
+        fig, (real, pred) = plt.subplots(1, 2, figsize=(12, 6))
+        fig.suptitle("Real and Predicted U-Values")
+
+        real.contour(
+            self.test_x,
+            self.test_y,
+            self.true_u,
+            levels=contour_levels,
+            linewidths=1,
+            linestyle=linestyle,
+            colors=["black"],
+            alpha=1,
+        )
+        realc = real.contourf(
+            self.x,
+            self.y,
+            self.true_u,
+            levels=100,
+            cmap=color_map,
+            alpha=0.6,
+        )
+        real.legend(["Real"])
+        fig.colorbar(realc, ax=real)
+
+        pred.contour(
+            self.test_x,
+            self.test_y,
+            self.pred_u,
+            levels=contour_levels,
+            linewidths=1,
+            linestyle=linestyle,
+            colors=["black"],
+            alpha=1,
+        )
+        predc = pred.contourf(
+            self.x,
+            self.y,
+            self.pred_u,
+            levels=100,
+            cmap=color_map,
+            alpha=0.6,
+        )
+        pred.legend(["Predicted"])
+        fig.colorbar(predc, ax=pred)
+
+        real.set(xlim=self.x_limits, ylim=self.y_limits, xlabel="X", ylabel="Y")
+        pred.set(
+            title="Predicted",
+            xlim=self.x_limits,
+            ylim=self.y_limits,
+            xlabel="X",
+            ylabel="Y",
+        )
+        real.set(title="Real")
+
     def plot2d_fix_x(self, x_i=None):
         """
         This function creates a 2D plot by fixing the x-coordinate at a specific value.
@@ -81,3 +143,28 @@ class NNPlots:
             label="real",
         )
         flat.legend(fontsize=15)
+
+
+if __name__ == ("__main__"):
+
+    def real_u(x, y):
+        return np.sin(np.pi * x) * np.sin(np.pi * y)
+
+    grid_size = (50, 50)
+    plotting_grid_size = (200, 200)
+    x_limits = (0, 2)
+    y_limits = (0, 2)
+    border_grid_size = (50, 50)
+    x = np.linspace(x_limits[0], x_limits[1], plotting_grid_size[0])
+    y = np.linspace(y_limits[0], y_limits[1], plotting_grid_size[1])
+    x, y = np.meshgrid(x, y)
+    test_x = np.linspace(x_limits[0], x_limits[1], plotting_grid_size[0])
+    test_y = np.linspace(x_limits[0], x_limits[1], plotting_grid_size[1])
+    test_x, test_y = np.meshgrid(test_x, test_y)
+    train_u = real_u(x, y)
+    true_u = real_u(test_x, test_y)
+    test_coord = np.column_stack((test_x.flatten(), test_y.flatten()))
+    pred_coord = list()
+    pred_u = true_u
+    plotter = NNPlots(test_x, test_y, true_u, x, y, pred_u, x_limits, y_limits)
+    plotter.plot2d_contour()
