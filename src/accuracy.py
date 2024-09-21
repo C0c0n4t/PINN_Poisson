@@ -21,21 +21,26 @@ class AccuracyCalc:
     def _to_percent(error_function):
         def wrapper_to_percent(*args, **kwargs):
             return error_function(*args, **kwargs) * 100
+
         return wrapper_to_percent
 
     @_to_percent
-    def good_perc_rel(self, area: np.ndarray | None, rel_dis: float)
+    def good_perc_rel(self, area: np.ndarray | None, rel_dis: float):
         """
         Percent of close values, by relative distance
         """
-        if (area.isinstance(None)):
-            return np.sum(np.isclose(
-                self._model(self._area), self._real_function(self._area),
-                rtol=rel_dis)) / len(self._area)
+        if area.isinstance(None):
+            return np.sum(
+                np.isclose(
+                    self._model(self._area),
+                    self._real_function(self._area),
+                    rtol=rel_dis,
+                )
+            ) / len(self._area)
         else:
-            return np.sum(np.isclose(
-                self._model(area), self._real_function(area),
-                rtol=rel_dis)) / len(area)
+            return np.sum(
+                np.isclose(self._model(area), self._real_function(area), rtol=rel_dis)
+            ) / len(area)
 
     # @_to_percent
     # def good_perc_abs(actual: np.ndarray, predicted: np.ndarray):
@@ -59,10 +64,10 @@ class AccuracyCalc:
     #     """
     #     return np.mean(np.arctan(np.abs((actual - predicted) / (actual + EPSILON))))
 
-    # def mse(actual: np.ndarray, predicted: np.ndarray):
-    #     """
-    #     Mean Squared Error
-    #     """
-    #     return np.mean(np.square(actual - predicted))
+    def mse(actual: np.ndarray, predicted: np.ndarray):
+        """
+        Mean Squared Error
+        """
+        return np.mean(np.square(actual - predicted))
 
     # def maxe()
