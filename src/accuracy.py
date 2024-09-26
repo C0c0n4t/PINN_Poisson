@@ -14,8 +14,10 @@ class AccuracyCalc:
         self._actual_function = actual_function
 
         self._area = area
-        self._predicted_val = self._model.predict(self._area)
+        self._predicted_val = self._model.predict(self._area).ravel()
         self._actual_val = self._actual_function(self._area)
+        print(self._predicted_val.shape)
+        print(self._actual_val.shape)
 
     @property
     def area(self):  # like getter
@@ -58,18 +60,23 @@ class AccuracyCalc:
         Variance Explained Accuracy
         """
         mean = np.mean(self._actual_val)
-        return 1 - \
-            np.sum(np.square(self._actual_val - self._predicted_val)) /\
-            np.sum(np.square(self._actual_val - mean))
+        return 1 - np.sum(np.square(self._actual_val - self._predicted_val)) / np.sum(
+            np.square(self._actual_val - mean)
+        )
 
     def maape(self):
         """
         Mean Arctangent Absolute Percentage Error
         Note: result is NOT multiplied by 100
         """
-        return np.mean(np.arctan(
-            np.abs((self._actual_val - self._predicted_val) /
-                   (self._actual_val + AccuracyCalc.EPSILON))))
+        return np.mean(
+            np.arctan(
+                np.abs(
+                    (self._actual_val - self._predicted_val)
+                    / (self._actual_val + AccuracyCalc.EPSILON)
+                )
+            )
+        )
 
     def mse(self):
         """
