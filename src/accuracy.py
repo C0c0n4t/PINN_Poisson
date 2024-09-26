@@ -36,7 +36,7 @@ class AccuracyCalc:
         return wrapper_to_percent
 
     @_to_percent
-    def good_perc_rel(self, rel_dis: float):
+    def good_perc_rel(self, rel_dis: float) -> float:
         """
         Percent of close values, by relative distance
         """
@@ -45,7 +45,7 @@ class AccuracyCalc:
         ) / len(self._area)
 
     @_to_percent
-    def good_perc_abs(self, abs_dis: float):
+    def good_perc_abs(self, abs_dis: float) -> float:
         """
         Percent of close values, by absolute distance
         """
@@ -55,7 +55,7 @@ class AccuracyCalc:
 
     @_to_percent
     # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5570302/
-    def ve_acc(self):
+    def ve_acc(self) -> float:
         """
         Variance Explained Accuracy
         """
