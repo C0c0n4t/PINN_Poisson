@@ -1,4 +1,5 @@
 import numpy as np
+# import 
 
 
 class AccuracyCalc:
@@ -9,15 +10,16 @@ class AccuracyCalc:
     it's like a state of an object
     """
 
+    # TODO: divide area into border and inside
     def __init__(self, model, actual_function: callable, area: np.array = None):
         self._model = model
         self._actual_function = actual_function
 
         self._area = area
-        self._predicted_val = self._model.predict(self._area).ravel()
+        self._pinn_val = self._model.predict(self._area).ravel()
         self._actual_val = self._actual_function(self._area)
-        print(self._predicted_val.shape)
-        print(self._actual_val.shape)
+        # print(self._pinn_val.shape)
+        # print(self._actual_val.shape)
 
     @property
     def area(self):  # like getter
@@ -26,8 +28,9 @@ class AccuracyCalc:
     @area.setter
     def area(self, area: np.array):  # like setter
         self._area = area
-        self._predicted_val = self._model.predict(self._area)
+        self._pinn_val = self._model.predict(self._area)
         self._actual_val = self._actual_function(self._area)
+        # self._num_val = self.
 
     def _to_percent(error_function):
         def wrapper_to_percent(*args, **kwargs):
@@ -41,7 +44,7 @@ class AccuracyCalc:
         Percent of close values, by relative distance
         """
         return np.sum(
-            np.isclose(self._predicted_val, self._actual_val, rtol=rel_dis)
+            np.isclose(self._pinn_val, self._actual_val, rtol=rel_dis)
         ) / len(self._area)
 
     @_to_percent
@@ -50,7 +53,7 @@ class AccuracyCalc:
         Percent of close values, by absolute distance
         """
         return np.sum(
-            np.isclose(self._predicted_val, self._actual_val, atol=abs_dis)
+            np.isclose(self._pinn_val, self._actual_val, atol=abs_dis)
         ) / len(self._area)
 
     @_to_percent
@@ -60,7 +63,7 @@ class AccuracyCalc:
         Variance Explained Accuracy
         """
         mean = np.mean(self._actual_val)
-        return 1 - np.sum(np.square(self._actual_val - self._predicted_val)) / np.sum(
+        return 1 - np.sum(np.square(self._actual_val - self._pinn_val)) / np.sum(
             np.square(self._actual_val - mean)
         )
 
@@ -72,7 +75,7 @@ class AccuracyCalc:
         return np.mean(
             np.arctan(
                 np.abs(
-                    (self._actual_val - self._predicted_val)
+                    (self._actual_val - self._pinn_val)
                     / (self._actual_val + AccuracyCalc.EPSILON)
                 )
             )
@@ -82,10 +85,10 @@ class AccuracyCalc:
         """
         Mean Squared Error
         """
-        return np.mean(np.square(self._actual_val - self._predicted_val))
+        return np.mean(np.square(self._actual_val - self._pinn_val))
 
     def maxe(self):
         """
         Maximum Error
         """
-        return np.max(np.abs(self._actual_val - self._predicted_val))
+        return np.max(np.abs(self._actual_val - self._pinn_val))
