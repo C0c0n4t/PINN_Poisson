@@ -68,7 +68,8 @@ class NNPlots:
         """
         This function creates a 2D contour plot of the real and predicted u-values.
         """
-        fig, (real, pred) = plt.subplots(1, 2, figsize=(12, 6))
+        fig, ((real, pred), (diff, none)) = plt.subplots(
+            2, 2, figsize=(12, 12))
         fig.suptitle("Real and Predicted U-Values")
 
         real.contour(
@@ -113,15 +114,42 @@ class NNPlots:
         pred.legend(["Predicted"])
         fig.colorbar(predc, ax=pred)
 
-        real.set(xlim=self.x_limits, ylim=self.y_limits, xlabel="X", ylabel="Y")
+        real.set(xlim=self.x_limits, ylim=self.y_limits,
+                 xlabel="X", ylabel="Y")
         pred.set(
             title="Predicted",
             xlim=self.x_limits,
             ylim=self.y_limits,
             xlabel="X",
-            ylabel="Y",
+            ylabel="Y")
+
+        diff.contour(
+            self.test_x,
+            self.test_y,
+            self.pred_u - self.true_u,
+            levels=contour_levels,
+            linewidths=1,
+            linestyle=linestyle,
+            colors=["black"],
+            alpha=1,
         )
+        diffc = diff.contourf(
+            self.x,
+            self.y,
+            self.pred_u - self.true_u,
+            levels=100,
+            cmap=color_map,
+            alpha=0.6,
+        )
+        diff.set(
+            title="Real - Predicted",
+            xlim=self.x_limits,
+            ylim=self.y_limits,
+            xlabel="X",
+            ylabel="Y")
         real.set(title="Real")
+        diff.legend(["Real - Predicted"])
+        fig.colorbar(diffc, ax=diff)
 
     def plot2d_fix_x(self, x_i=None):
         """
@@ -133,12 +161,14 @@ class NNPlots:
         fig1 = plt.figure()
         flat = fig1.add_subplot()
         flat.plot(
-            np.linspace(self.y_limits[0], self.y_limits[1], len(self.pred_u[x_i])),
+            np.linspace(self.y_limits[0],
+                        self.y_limits[1], len(self.pred_u[x_i])),
             self.pred_u[x_i],
             label="pred",
         )
         flat.plot(
-            np.linspace(self.y_limits[0], self.y_limits[1], len(self.true_u[x_i])),
+            np.linspace(self.y_limits[0],
+                        self.y_limits[1], len(self.true_u[x_i])),
             self.true_u[x_i],
             label="real",
         )
@@ -172,4 +202,4 @@ if __name__ == ("__main__"):
     pred_coord = list()
     pred_u = true_u
     plotter = NNPlots(test_x, test_y, true_u, x, y, pred_u, x_limits, y_limits)
-    plotter.plot3d()
+    plotter.plot2d_contour()
