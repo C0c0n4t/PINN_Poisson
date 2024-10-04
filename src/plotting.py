@@ -25,6 +25,10 @@ class NNPlots:
         plt.plot(train_loss)
         plt.show()
 
+    def plot_error(self, koefs, error_record):
+        fig, plt1 = plt.subplots(1, 1, figsize=(8, 8))
+        plt1.plot(koefs, error_record)
+
     def plot3d(self):
         """
         3d plot with 2 surfaces: real and predicted
@@ -68,10 +72,10 @@ class NNPlots:
         """
         This function creates a 2D contour plot of the real and predicted u-values.
         """
-        fig, ((real, pred), (diff, none)) = plt.subplots(
-            2, 2, figsize=(12, 12))
+        fig, axes = plt.subplots(2, 2, figsize=(12, 12))
+        real, pred, diff = axes[0, 0], axes[0, 1], axes[1, 0]
         fig.suptitle("Real and Predicted U-Values")
-
+        fig.delaxes(axes[1, 1])
         real.contour(
             self.test_x,
             self.test_y,
@@ -202,4 +206,4 @@ if __name__ == ("__main__"):
     pred_coord = list()
     pred_u = true_u
     plotter = NNPlots(test_x, test_y, true_u, x, y, pred_u, x_limits, y_limits)
-    plotter.plot2d_contour()
+    plotter.plot_error([1, 2, 3], [1, 2, 3])
