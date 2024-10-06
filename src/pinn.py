@@ -32,25 +32,25 @@ class PINNModel:
         return -2 * tf_pi * tf_pi * tf.sin(tf_pi * y) * tf.sin(tf_pi * x)
 
     @tf.function
-    def _ode(self, ic, bc):
+    def _ode(self):
         with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
-            tape.watch(ic)
+            tape.watch(self._ic)
             with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape1:
-                tape1.watch(ic)
-                u = self._model(ic)
-            grad_u = tape1.gradient(u, ic)
+                tape1.watch(self._ic)
+                u = self._model(self._ic)
+            grad_u = tape1.gradient(u, self._ic)
             du_dx = grad_u[..., 0]
             du_dy = grad_u[..., 1]
             del tape1
 
-        d2u_dx2 = tape.gradient(du_dx, ic)[..., 0]
-        d2u_dy2 = tape.gradient(du_dy, ic)[..., 1]
+        d2u_dx2 = tape.gradient(du_dx, self._ic)[..., 0]
+        d2u_dy2 = tape.gradient(du_dy, self._ic)[..., 1]
         del tape
 
-        x = ic[..., 0]
-        y = ic[..., 1]
+        x = self._ic[..., 0]
+        y = self._ic[..., 1]
         ode_loss = d2u_dx2 + d2u_dy2 - self.f(x, y)
-        IC_loss = self._model(bc) - tf.zeros((len(bc), 1))
+        IC_loss = self._model(self._bc) - tf.zeros((len(self._bc), 1))
 
         return tf.reduce_mean(tf.square(ode_loss)) + self._koef * tf.reduce_mean(tf.square(IC_loss))
 
@@ -58,7 +58,7 @@ class PINNModel:
     def _train_cycle(self, epochs, loss, eprint):
         for itr in tf.range(0, epochs):
             with tf.GradientTape() as tape:
-                train_loss = self._ode(self._ic, self._bc)
+                train_loss = self._ode()
                 # TODO: tf.summary
                 # train_loss_record.append(train_loss)
 
@@ -75,8 +75,8 @@ class PINNModel:
 
     def train(self, koef, train_coord, border, epochs, loss, eprint):
         self._koef = tf.constant(koef, dtype=tf.float32)
-        self._ic = train_coord
-        self._bc = border
+        self._ic = tf.Variable(train_coord)
+        self._bc = tf.Variable(border)
         self._train_cycle(epochs, loss, eprint)
 
     def load_weights(self, path):
