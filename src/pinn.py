@@ -29,7 +29,6 @@ class PINNModel:
 
     # @tf.function
     def f(self, x, y):
-        print(x.shape, y.shape)
         return -2 * tf_pi * tf_pi * tf.sin(tf_pi * y) * tf.sin(tf_pi * x)
 
     @tf.function
@@ -50,7 +49,6 @@ class PINNModel:
 
         x = ic[..., 0]
         y = ic[..., 1]
-        print(x.shape, y.shape)
         ode_loss = d2u_dx2 + d2u_dy2 - self.f(x, y)
         IC_loss = self._model(bc) - tf.zeros((len(bc), 1))
 
