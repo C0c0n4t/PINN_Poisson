@@ -1,21 +1,23 @@
 import matplotlib.pyplot as plt
 import random
 import numpy as np
-import time
 
 
 class NNPlots:
-    def __init__(self, test_x, test_y, true_u, x, y, pred_u, x_limits, y_limits):
-        self.test_x = test_x
-        self.test_y = test_y
-        self.true_u = true_u
 
-        self.x = x
-        self.y = y
-        self.pred_u = pred_u
-
-        self.x_limits = x_limits
-        self.y_limits = y_limits
+    def __init__(self, limits, grid_size, model, real_u):
+        self.x = np.linspace(limits[0][0], limits[0][1], grid_size[0])
+        self.y = np.linspace(limits[1][0], limits[1][1], grid_size[1])
+        self.x, self.y = np.meshgrid(self.x, self.y)
+        pred_coord = []
+        for _x in self.x[0]:
+            for _y in self.x[0]:
+                pred_coord.append([_x, _y])
+        pred_coord = np.array(pred_coord)
+        self.true_u = real_u((self.x, self.y))
+        self.pred_u = model.predict(pred_coord).ravel().reshape(grid_size)
+        self.x_limits = limits[0]
+        self.y_limits = limits[1]
 
     @staticmethod
     def plotLoss(train_loss):
@@ -35,8 +37,8 @@ class NNPlots:
         """
         ax = plt.figure().add_subplot(projection="3d")
         ax.plot_surface(
-            self.test_x,
-            self.test_y,
+            self.x,
+            self.y,
             self.true_u,
             edgecolor="black",
             lw=0.5,
@@ -77,8 +79,8 @@ class NNPlots:
         fig.suptitle("Real and Predicted U-Values")
         fig.delaxes(axes[1, 1])
         real.contour(
-            self.test_x,
-            self.test_y,
+            self.x,
+            self.y,
             self.true_u,
             levels=contour_levels,
             linewidths=1,
@@ -98,8 +100,8 @@ class NNPlots:
         fig.colorbar(realc, ax=real)
 
         pred.contour(
-            self.test_x,
-            self.test_y,
+            self.x,
+            self.y,
             self.pred_u,
             levels=contour_levels,
             linewidths=1,
@@ -128,8 +130,8 @@ class NNPlots:
             ylabel="Y")
 
         diff.contour(
-            self.test_x,
-            self.test_y,
+            self.x,
+            self.y,
             self.pred_u - self.true_u,
             levels=contour_levels,
             linewidths=1,
@@ -197,13 +199,13 @@ if __name__ == ("__main__"):
     x = np.linspace(x_limits[0], x_limits[1], plotting_grid_size[0])
     y = np.linspace(y_limits[0], y_limits[1], plotting_grid_size[1])
     x, y = np.meshgrid(x, y)
-    test_x = np.linspace(x_limits[0], x_limits[1], plotting_grid_size[0])
-    test_y = np.linspace(x_limits[0], x_limits[1], plotting_grid_size[1])
-    test_x, test_y = np.meshgrid(test_x, test_y)
+    x = np.linspace(x_limits[0], x_limits[1], plotting_grid_size[0])
+    y = np.linspace(x_limits[0], x_limits[1], plotting_grid_size[1])
+    x, y = np.meshgrid(x, y)
     train_u = real_u(x, y)
-    true_u = real_u(test_x, test_y)
-    test_coord = np.column_stack((test_x.flatten(), test_y.flatten()))
+    true_u = real_u(x, y)
+    test_coord = np.column_stack((x.flatten(), y.flatten()))
     pred_coord = list()
     pred_u = true_u
-    plotter = NNPlots(test_x, test_y, true_u, x, y, pred_u, x_limits, y_limits)
+    plotter = NNPlots(x, y, true_u, x, y, pred_u, x_limits, y_limits)
     plotter.plot_error([1, 2, 3], [1, 2, 3])
