@@ -93,9 +93,9 @@ class PINNModel:
                 if train_loss < loss:
                     break
 
-    def train(self, koef, train_coord, border, epochs, loss, eprint):
+    def train(self, koef, inner, border, epochs, loss, eprint):
         self._koef = tf.constant(koef, dtype=tf.float32)
-        self._ic = tf.Variable(train_coord)
+        self._ic = tf.Variable(inner)
         self._bc = tf.Variable(border)
         self._train_cycle(epochs, loss, eprint)
 

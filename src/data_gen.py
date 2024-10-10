@@ -13,7 +13,7 @@ class DataGenerator:
     def inner_pairs(self, gs):
         x = np.linspace(self._xlim[0], self._xlim[1],
                         gs[0], dtype=np.float32)[1:-1]
-        y = np.linspace(self._ylim[1][0], self._ylim[1],
+        y = np.linspace(self._ylim[0], self._ylim[1],
                         gs[1], dtype=np.float32)[1:-1]
 
         return self.__mesh_to_pairs(np.meshgrid(x, y))
@@ -31,26 +31,28 @@ class DataGenerator:
         border = np.concatenate((np.column_stack((x_first, x)), np.column_stack(
             (x_last, x)), np.column_stack((y, y_first))[1:-1], np.column_stack((y, y_last))[1:-1]))
         return border
-    
+
+    def area_pairs(self, gs):
+        return np.concatenate((self.border_pairs(gs), self.inner_pairs(gs)), asis=0)
+
     def real_pairs(self, grid):
         pass
-    
+
     def prediction_pairs(self, grid):
         pass
-    
+
     def plot_area(self, grid):
-        self.x = np.linspace(limits[0][0], limits[0][1], grid_size[0])
-        self.y = np.linspace(limits[1][0], limits[1][1], grid_size[1])
-        self.x, self.y = np.meshgrid(self.x, self.y)
+        x = np.linspace(self._xlim[0], self._xlim[1], grid[0])
+        y = np.linspace(self._ylim[0], self._ylim[1], grid[1])
+        x, y = np.meshgrid(x, y)
         pred_coord = []
-        for _x in self.x[0]:
-            for _y in self.x[0]:
+        for _x in x[0]:
+            for _y in x[0]:
                 pred_coord.append([_x, _y])
         pred_coord = np.array(pred_coord)
-        self.true_u = real_u((self.x, self.y))
-        self.pred_u = model.predict(pred_coord).ravel().reshape(grid_size)
-        self.x_limits = limits[0]
-        self.y_limits = limits[1]
+        true_u = self._real((x, y))
+        pred_u = self._predict(pred_coord).ravel().reshape(grid)
+        return (x, y, true_u, pred_u, self._xlim, self._ylim)
 
     @staticmethod
     def __mesh_to_pairs(meshgrid: list[np.ndarray]) -> npt.NDArray:

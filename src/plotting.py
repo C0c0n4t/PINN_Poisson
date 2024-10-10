@@ -7,11 +7,8 @@ import numpy as np
 class NNPlots:
     def __init__(self, dg: DataGenerator, grid):
         # all set by dg
-        # self.x = 
-        # self.y = 
-        # self.real_val
-        # self.pred_val
-        pass
+        self.x, self.y, self.real_val, self.pred_val, self.x_limits, self.y_limits = dg.plot_area(
+            grid)
 
     @staticmethod
     def plotLoss(train_loss):
