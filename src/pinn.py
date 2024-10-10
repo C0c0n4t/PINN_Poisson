@@ -3,6 +3,24 @@ from math import pi
 import tensorflow as tf
 
 
+def model1():
+    @tf.function
+    def custom_activation(x):
+        return tf.sin(x)
+
+    model = tf.keras.models.Sequential(
+        [
+            tf.keras.layers.Input((2,)),
+            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=1),
+        ]
+    )
+
+    return model
+
+
 tf_pi = tf.constant(pi)
 
 
@@ -14,21 +32,23 @@ class PINNModel:
     :param str initial_weights: path to initial weights
     """
 
-    def __init__(self, model: tf.keras.models.Sequential, optm, initial_weights: str="") -> None:
-        self._model: tf.keras.models.Sequential = model
+    def __init__(self, model, optm, initial_weights: str = "") -> None:
+        self._model = model
         self._optm = optm
 
         self._init_w = initial_weights
+
         self._koef = None
-        self._ic = None
-        self._bc = None
+        self._ic: tf.Variable = None
+        self._bc: tf.Variable = None
 
         self._model.compile(optimizer=self._optm, loss="mean_squared_error")
         if self._init_w != "":
             self._model.load_weights(self._init_w)
 
     # @tf.function
-    def f(self, x, y):
+    @staticmethod
+    def f(x, y):
         return -2 * tf_pi * tf_pi * tf.sin(tf_pi * y) * tf.sin(tf_pi * x)
 
     @tf.function
@@ -69,7 +89,7 @@ class PINNModel:
 
             if itr % eprint == 0:
                 # USE TF.PRINT()!!!
-                tf.print("epoch:", itr, "loss:", train_loss)  # .numpy())
+                tf.print("epoch:", itr, "loss:", train_loss)
                 if train_loss < loss:
                     break
 
@@ -79,16 +99,19 @@ class PINNModel:
         self._bc = tf.Variable(border)
         self._train_cycle(epochs, loss, eprint)
 
+    def predict(self, area):
+        return self._model.predict(area)
+
     def load_weights(self, path):
         try:
             self._model.load_weights(path)
         except:
             print("No such file")
 
-    def reset_weights(self):
-        self._model.set_weights(self._initial_weights)
-
     def save(self, path: str):
         if not os.path.isfile(path):
             os.mknod(path)
         self._model.save_weights(path)
+
+    def reset_weights(self):
+        self._model.set_weights(self._init_w)

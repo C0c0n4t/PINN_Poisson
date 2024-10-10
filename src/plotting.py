@@ -1,23 +1,17 @@
 import matplotlib.pyplot as plt
 import random
+from data_gen import DataGenerator
 import numpy as np
 
 
 class NNPlots:
-
-    def __init__(self, limits, grid_size, model, real_u):
-        self.x = np.linspace(limits[0][0], limits[0][1], grid_size[0])
-        self.y = np.linspace(limits[1][0], limits[1][1], grid_size[1])
-        self.x, self.y = np.meshgrid(self.x, self.y)
-        pred_coord = []
-        for _x in self.x[0]:
-            for _y in self.x[0]:
-                pred_coord.append([_x, _y])
-        pred_coord = np.array(pred_coord)
-        self.true_u = real_u((self.x, self.y))
-        self.pred_u = model.predict(pred_coord).ravel().reshape(grid_size)
-        self.x_limits = limits[0]
-        self.y_limits = limits[1]
+    def __init__(self, dg: DataGenerator, grid):
+        # all set by dg
+        # self.x = 
+        # self.y = 
+        # self.real_val
+        # self.pred_val
+        pass
 
     @staticmethod
     def plotLoss(train_loss):
@@ -39,7 +33,7 @@ class NNPlots:
         ax.plot_surface(
             self.x,
             self.y,
-            self.true_u,
+            self.real_val,
             edgecolor="black",
             lw=0.5,
             rstride=8,
@@ -52,7 +46,7 @@ class NNPlots:
         ax.plot_surface(
             self.x,
             self.y,
-            self.pred_u,
+            self.pred_val,
             edgecolor="royalblue",
             lw=0.5,
             rstride=8,
@@ -81,7 +75,7 @@ class NNPlots:
         real.contour(
             self.x,
             self.y,
-            self.true_u,
+            self.real_val,
             levels=contour_levels,
             linewidths=1,
             linestyle=linestyle,
@@ -91,7 +85,7 @@ class NNPlots:
         realc = real.contourf(
             self.x,
             self.y,
-            self.true_u,
+            self.real_val,
             levels=100,
             cmap=color_map,
             alpha=0.6,
@@ -102,7 +96,7 @@ class NNPlots:
         pred.contour(
             self.x,
             self.y,
-            self.pred_u,
+            self.pred_val,
             levels=contour_levels,
             linewidths=1,
             linestyle=linestyle,
@@ -112,7 +106,7 @@ class NNPlots:
         predc = pred.contourf(
             self.x,
             self.y,
-            self.pred_u,
+            self.pred_val,
             levels=100,
             cmap=color_map,
             alpha=0.6,
@@ -132,7 +126,7 @@ class NNPlots:
         diff.contour(
             self.x,
             self.y,
-            self.pred_u - self.true_u,
+            self.pred_val - self.real_val,
             levels=contour_levels,
             linewidths=1,
             linestyle=linestyle,
@@ -142,7 +136,7 @@ class NNPlots:
         diffc = diff.contourf(
             self.x,
             self.y,
-            self.pred_u - self.true_u,
+            self.pred_val - self.real_val,
             levels=100,
             cmap=color_map,
             alpha=0.6,
@@ -168,14 +162,14 @@ class NNPlots:
         flat = fig1.add_subplot()
         flat.plot(
             np.linspace(self.y_limits[0],
-                        self.y_limits[1], len(self.pred_u[x_i])),
-            self.pred_u[x_i],
+                        self.y_limits[1], len(self.pred_val[x_i])),
+            self.pred_val[x_i],
             label="pred",
         )
         flat.plot(
             np.linspace(self.y_limits[0],
-                        self.y_limits[1], len(self.true_u[x_i])),
-            self.true_u[x_i],
+                        self.y_limits[1], len(self.real_val[x_i])),
+            self.real_val[x_i],
             label="real",
         )
         flat.legend(fontsize=15)
@@ -203,9 +197,9 @@ if __name__ == ("__main__"):
     y = np.linspace(x_limits[0], x_limits[1], plotting_grid_size[1])
     x, y = np.meshgrid(x, y)
     train_u = real_u(x, y)
-    true_u = real_u(x, y)
+    real_val = real_u(x, y)
     test_coord = np.column_stack((x.flatten(), y.flatten()))
     pred_coord = list()
-    pred_u = true_u
-    plotter = NNPlots(x, y, true_u, x, y, pred_u, x_limits, y_limits)
+    pred_val = real_val
+    plotter = NNPlots(x, y, real_val, x, y, pred_val, x_limits, y_limits)
     plotter.plot_error([1, 2, 3], [1, 2, 3])

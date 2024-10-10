@@ -1,5 +1,6 @@
 import numpy as np
-# from numerical
+from data_gen import DataGenerator
+# from typing 
 
 
 class AccuracyCalc:
@@ -11,26 +12,16 @@ class AccuracyCalc:
     """
 
     # TODO: divide area into border and inside
-    def __init__(self, model, actual_function: callable, area: np.array = None):
-        self._model = model
-        self._actual_function = actual_function
+    def __init__(self, dg: DataGenerator, grid):
+        # dg.prediction_pairs(grid)
+        # dg.real_pairs
+        # self._real_val = 
+        # self._pred_val = 
+        pass
 
-        self._area = area
-        self._pinn_val = self._model.predict(self._area).ravel()
-        self._actual_val = self._actual_function(self._area)
-        # print(self._pinn_val.shape)
-        # print(self._actual_val.shape)
-
-    @property
-    def area(self):  # like getter
-        return self._area
-
-    @area.setter
-    def area(self, area: np.array):  # like setter
-        self._area = area
-        self._pinn_val = self._model.predict(self._area)
-        self._actual_val = self._actual_function(self._area)
-        # self._num_val = self.
+    def update_grid(self, grid):
+        self._re = 
+        
 
     def _to_percent(error_function):
         def wrapper_to_percent(*args, **kwargs):
