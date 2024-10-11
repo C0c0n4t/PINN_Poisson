@@ -10,49 +10,58 @@ class DataGenerator:
         self._predict = predict
         self._real = real
 
-    def inner_pairs(self, gs):
+    # def update_predict(self, ) ??
+
+    def _make_grid(self, grid, wborder=True):
+        if not wborder:
+            x, y = np.linspace(self._xlim[0], self._xlim[1],
+                               grid[0] + 2, dtype=np.float32)[1:-1], \
+                np.linspace(self._ylim[0], self._ylim[1],
+                            grid[1] + 2, dtype=np.float32)[1:-1]
+        else:
+            x, y = np.linspace(self._xlim[0], self._xlim[1],
+                               grid[0], dtype=np.float32), \
+                np.linspace(self._ylim[0], self._ylim[1],
+                            grid[1], dtype=np.float32)
+        return np.meshgrid(x, y)
+
+    def inner_pairs(self, grid):
+        return self.__mesh_to_pairs(self._make_grid(grid, wborder=False))
+
+    def border_pairs(self, grid):
         x = np.linspace(self._xlim[0], self._xlim[1],
-                        gs[0], dtype=np.float32)[1:-1]
+                        grid[0], dtype=np.float32)
         y = np.linspace(self._ylim[0], self._ylim[1],
-                        gs[1], dtype=np.float32)[1:-1]
+                        grid[1], dtype=np.float32)
 
-        return self.__mesh_to_pairs(np.meshgrid(x, y))
-
-    def border_pairs(self, gs):
-        x = np.linspace(self._xlim[0], self._xlim[1],
-                        gs[0], dtype=np.float32)
-        y = np.linspace(self._ylim[0], self._ylim[1],
-                        gs[1], dtype=np.float32)
-
-        x_first = np.full(gs[0], x[0])
-        x_last = np.full(gs[0], x[-1])
-        y_first = np.full(gs[1], y[0])
-        y_last = np.full(gs[1], y[-1])
+        x_first = np.full(grid[0], x[0])
+        x_last = np.full(grid[0], x[-1])
+        y_first = np.full(grid[1], y[0])
+        y_last = np.full(grid[1], y[-1])
         border = np.concatenate((np.column_stack((x_first, x)), np.column_stack(
             (x_last, x)), np.column_stack((y, y_first))[1:-1], np.column_stack((y, y_last))[1:-1]))
         return border
 
-    def area_pairs(self, gs):
-        return np.concatenate((self.border_pairs(gs), self.inner_pairs(gs)), asis=0)
+    def area_pairs(self, grid):
+        return np.concatenate((self.border_pairs(grid), self.inner_pairs(grid)), axis=0)
 
     def real_pairs(self, grid):
-        pass
+        return self._real(self.area_pairs(grid))
 
     def prediction_pairs(self, grid):
-        pass
+        return self._predict(self.area_pairs(grid))
 
     def plot_area(self, grid):
-        x = np.linspace(self._xlim[0], self._xlim[1], grid[0])
-        y = np.linspace(self._ylim[0], self._ylim[1], grid[1])
-        x, y = np.meshgrid(x, y)
+        x, y = self._make_grid(grid)
+        print(x.shape)
         pred_coord = []
         for _x in x[0]:
-            for _y in x[0]:
+            for _y in y[0]:
                 pred_coord.append([_x, _y])
         pred_coord = np.array(pred_coord)
         true_u = self._real((x, y))
         pred_u = self._predict(pred_coord).ravel().reshape(grid)
-        return (x, y, true_u, pred_u, self._xlim, self._ylim)
+        return (x, y, true_u, pred_u)
 
     @staticmethod
     def __mesh_to_pairs(meshgrid: list[np.ndarray]) -> npt.NDArray:

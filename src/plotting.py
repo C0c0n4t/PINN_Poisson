@@ -6,9 +6,13 @@ import numpy as np
 
 class NNPlots:
     def __init__(self, dg: DataGenerator, grid):
-        # all set by dg
-        self.x, self.y, self.real_val, self.pred_val, self.x_limits, self.y_limits = dg.plot_area(
-            grid)
+        self._dg = dg
+        self.x_limits, self.y_limits =\
+            self._dg._xlim, self._dg._ylim
+        self.x, self.y, self.real_val, self.pred_val = self._dg.plot_area(grid)
+
+    def change_grid(self, grid):
+        self.x, self.y, self.real_val, self.pred_val = self._dg.plot_area(grid)
 
     @staticmethod
     def plotLoss(train_loss):
@@ -18,7 +22,8 @@ class NNPlots:
         plt.plot(train_loss)
         plt.show()
 
-    def plot_error(self, koefs, error_record):
+    @staticmethod
+    def plot_error(koefs, error_record):
         fig, plt1 = plt.subplots(1, 1, figsize=(8, 8))
         plt1.plot(koefs, error_record)
 
