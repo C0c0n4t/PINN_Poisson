@@ -5,6 +5,9 @@ import tensorflow as tf
 
 def model1(lnum: int):
     @tf.function
+    def custom_activation2(x):
+        return tf.sin(5*x)
+
     def custom_activation(x):
         return tf.sin(x)
 
@@ -15,6 +18,8 @@ def model1(lnum: int):
     model = tf.keras.Sequential(
         [
             tf.keras.layers.Input((2,)),
+            tf.keras.layers.Dense(units=32, activation=custom_activation2),
+            tf.keras.layers.Dense(units=32, activation=custom_activation),
             tf.keras.layers.Dense(units=32, activation=custom_activation),
             tf.keras.layers.Dense(units=32, activation=custom_activation),
             tf.keras.layers.Dense(units=32, activation=custom_activation),
