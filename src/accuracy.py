@@ -15,7 +15,7 @@ class AccuracyCalc:
     def __init__(self, dg: DataGenerator, grid):
         self._dg = dg
         self._real_val = self._dg.real_pairs(grid)
-        self._pred_val = self._dg.prediction_pairs(grid)
+        self._pred_val = self._dg.prediction_pairs(grid).ravel()
 
     def update_grid(self, grid):
         self._real_val = self._dg.real_pairs(grid)
