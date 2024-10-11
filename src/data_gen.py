@@ -10,23 +10,13 @@ class DataGenerator:
         self._predict = predict
         self._real = real
 
-    # def update_predict(self, ) ??
-
-    def _make_grid(self, grid, wborder=True):
-        if not wborder:
-            x, y = np.linspace(self._xlim[0], self._xlim[1],
-                               grid[0] + 2, dtype=np.float32)[1:-1], \
-                np.linspace(self._ylim[0], self._ylim[1],
-                            grid[1] + 2, dtype=np.float32)[1:-1]
-        else:
-            x, y = np.linspace(self._xlim[0], self._xlim[1],
-                               grid[0], dtype=np.float32), \
-                np.linspace(self._ylim[0], self._ylim[1],
-                            grid[1], dtype=np.float32)
-        return np.meshgrid(x, y)
-
     def inner_pairs(self, grid):
-        return self.__mesh_to_pairs(self._make_grid(grid, wborder=False))
+        x = np.linspace(self._xlim[0], self._xlim[1],
+                        grid[0], dtype=np.float32)[1:-1]
+        y = np.linspace(self._ylim[0], self._ylim[1],
+                        grid[1], dtype=np.float32)[1:-1]
+
+        return self.__mesh_to_pairs(np.meshgrid(x, y))
 
     def border_pairs(self, grid):
         x = np.linspace(self._xlim[0], self._xlim[1],
@@ -52,11 +42,12 @@ class DataGenerator:
         return self._predict(self.area_pairs(grid))
 
     def plot_area(self, grid):
-        x, y = self._make_grid(grid)
-        print(x.shape)
+        x = np.linspace(self._xlim[0], self._xlim[1], grid[0])
+        y = np.linspace(self._ylim[0], self._ylim[1], grid[1])
+        x, y = np.meshgrid(x, y)
         pred_coord = []
         for _x in x[0]:
-            for _y in y[0]:
+            for _y in x[0]:
                 pred_coord.append([_x, _y])
         pred_coord = np.array(pred_coord)
         true_u = self._real((x, y))

@@ -3,15 +3,18 @@ from math import pi
 import tensorflow as tf
 
 
-def model1():
+def model1(lnum: int):
     @tf.function
     def custom_activation(x):
         return tf.sin(x)
 
-    model = tf.keras.models.Sequential(
+    # layers = []
+    # for _ in range(lnum):
+    #     layers.append(tf.keras.layers.Dense(units=32, activation=custom_activation))
+
+    model = tf.keras.Sequential(
         [
             tf.keras.layers.Input((2,)),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
             tf.keras.layers.Dense(units=32, activation=custom_activation),
             tf.keras.layers.Dense(units=32, activation=custom_activation),
             tf.keras.layers.Dense(units=32, activation=custom_activation),
@@ -19,6 +22,7 @@ def model1():
         ]
     )
 
+    model.summary()
     return model
 
 
@@ -45,7 +49,7 @@ class PINNModel:
 
         if initial_weights != "":
             self.load_weights(initial_weights)
-        self._init_w = self._model.trainable_variables[:]
+        self._init_w = self._model.get_weights()
 
     # @tf.function
     def f(self, x, y):
@@ -76,10 +80,8 @@ class PINNModel:
 
     @tf.function
     def _train_cycle(self, epochs, loss, eprint):
-        tf.print("WHAT")
         for itr in tf.range(0, epochs):
             with tf.GradientTape() as tape:
-                # tf.print("WHAT")
                 train_loss = self._ode()
                 # TODO: tf.summary
                 # train_loss_record.append(train_loss)
@@ -99,7 +101,6 @@ class PINNModel:
         self._koef = tf.constant(koef, dtype=tf.float32)
         self._ic = tf.Variable(inner)
         self._bc = tf.Variable(border)
-        print("AKAKAK")
         self._train_cycle(epochs, loss, eprint)
 
     def predict(self, area):
