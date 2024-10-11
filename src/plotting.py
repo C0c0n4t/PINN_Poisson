@@ -11,7 +11,7 @@ class NNPlots:
             self._dg._xlim, self._dg._ylim
         self.x, self.y, self.real_val, self.pred_val = self._dg.plot_area(grid)
 
-    def change_grid(self, grid):
+    def update(self, grid):
         self.x, self.y, self.real_val, self.pred_val = self._dg.plot_area(grid)
 
     @staticmethod

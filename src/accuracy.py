@@ -17,7 +17,7 @@ class AccuracyCalc:
         self._real_val = self._dg.real_pairs(grid)
         self._pred_val = self._dg.prediction_pairs(grid).ravel()
 
-    def update_grid(self, grid):
+    def update(self, grid):
         self._real_val = self._dg.real_pairs(grid)
         self._pred_val = self._dg.prediction_pairs(grid)
 
