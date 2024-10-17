@@ -1,6 +1,22 @@
 import numpy as np
 import numpy.typing as npt
+import json
 from typing import Callable
+
+
+def real_u1(area):
+    area = np.array(area)
+    if len(area.shape) >= 3:
+        x = area[0]
+        y = area[1]
+        return np.sin(np.pi * x) * np.sin(np.pi * y)
+    else:
+        return np.array([np.sin(np.pi * x) * np.sin(np.pi * y) for x, y in area])
+
+
+def get_koefs():
+    with open('koef.json', 'r') as file:
+        return json.load(file)['koefs']
 
 
 class DataGenerator:

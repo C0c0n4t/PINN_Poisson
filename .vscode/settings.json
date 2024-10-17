@@ -1,3 +1,7 @@
 {
-    "python.defaultInterpreterPath": ".venv/bin/python"
+    "python.defaultInterpreterPath": ".venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "autopep8.interpreter": [
+        ".venv/bin/python"
+    ],
 }

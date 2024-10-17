@@ -1,24 +1,42 @@
 import os
+import time
 from math import pi
 import tensorflow as tf
 
 
-def model1(lnum: int):
+def model1():
     @tf.function
     def custom_activation2(x):
         return tf.sin(5*x)
-
+    
+    @tf.function
     def custom_activation(x):
         return tf.sin(x)
-
-    # layers = []
-    # for _ in range(lnum):
-    #     layers.append(tf.keras.layers.Dense(units=32, activation=custom_activation))
 
     model = tf.keras.Sequential(
         [
             tf.keras.layers.Input((2,)),
             tf.keras.layers.Dense(units=32, activation=custom_activation2),
+            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=1),
+        ]
+    )
+
+    model.summary()
+    return model
+
+
+def model2():
+    @tf.function
+    def custom_activation(x):
+        return tf.sin(x)
+
+    model = tf.keras.Sequential(
+        [
+            tf.keras.layers.Input((2,)),
             tf.keras.layers.Dense(units=32, activation=custom_activation),
             tf.keras.layers.Dense(units=32, activation=custom_activation),
             tf.keras.layers.Dense(units=32, activation=custom_activation),
@@ -45,6 +63,8 @@ class PINNModel:
     def __init__(self, model, optm, initial_weights: str = "") -> None:
         self._model = model
         self._optm = optm
+
+        self._train_loss = None
 
         self._koef = None
         self._ic: tf.Variable = None
@@ -84,34 +104,39 @@ class PINNModel:
         return tf.reduce_mean(tf.square(ode_loss)) + self._koef * tf.reduce_mean(tf.square(IC_loss))
 
     @tf.function
-    def _train_cycle(self, epochs, loss, eprint):
-        for itr in tf.range(0, epochs):
+    def _train_cycle(self, EPOCHS, EPRINT):
+        for itr in tf.range(0, EPOCHS):
             with tf.GradientTape() as tape:
                 train_loss = self._ode()
                 # TODO: tf.summary
                 # train_loss_record.append(train_loss)
 
+            # if itr % EPRINT == 0:
+            #     # USE TF.PRINT()!!!
+            #     tf.print("epoch:", itr, "loss:", train_loss)
+                
             grad_w = tape.gradient(train_loss, self._model.trainable_variables)
             self._optm.apply_gradients(
                 zip(grad_w, self._model.trainable_variables))
             del tape
 
-            if itr % eprint == 0:
-                # USE TF.PRINT()!!!
-                tf.print("epoch:", itr, "loss:", train_loss)
-                if train_loss < loss:
-                    break
 
-    def train(self, koef, inner, border, epochs, loss, eprint):
+    def fit(self, koef, inner, border, EPOCHS, EPRINT):
+        start = time.time()
+
         self._koef = tf.constant(koef, dtype=tf.float32)
         self._ic = tf.Variable(inner)
         self._bc = tf.Variable(border)
-        self._train_cycle(epochs, loss, eprint)
+        # self._train_loss = []
+        self._train_cycle(EPOCHS + 1, EPRINT)
+
+        print(f"Time past {time.time() - start}\n")
+        # return self._train_loss
 
     def predict(self, area):
         return self._model.predict(area)
 
-    def load_weights(self, path):
+    def load(self, path):
         try:
             self._model.load_weights(path)
         except:
@@ -122,5 +147,5 @@ class PINNModel:
             os.mknod(path)
         self._model.save_weights(path)
 
-    def reset_weights(self):
+    def reset(self):
         self._model.set_weights(self._init_w)
