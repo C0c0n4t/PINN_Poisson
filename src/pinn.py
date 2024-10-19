@@ -2,6 +2,16 @@ import os
 import time
 from math import pi
 import tensorflow as tf
+from typing import Callable
+
+
+def optm1():
+    boundaries = [5000, 15000, 50000]
+    values = [1e-3, 1e-4, 1e-5, 1e-6]
+
+    lr_sched = tf.optimizers.schedules.PiecewiseConstantDecay(
+        boundaries, values)
+    return tf.keras.optimizers.Adam(learning_rate=lr_sched)
 
 
 def model1():
@@ -25,7 +35,6 @@ def model1():
         ]
     )
 
-    model.summary()
     return model
 
 
@@ -45,7 +54,6 @@ def model2():
         ]
     )
 
-    model.summary()
     return model
 
 
@@ -60,27 +68,29 @@ class PINNModel:
     :param str initial_weights: path to initial weights
     """
 
-    def __init__(self, model, optm, initial_weights: str = "") -> None:
-        self._model = model
-        self._optm = optm
-
+    # TODO : pass f and icf as parameters
+    def __init__(self, model, optm, lossf="mse", initial_weights: str = "") -> None:
         self._train_loss = None
 
-        self._EPOCHS = 5000
-        self._EPRINT = 500
+        self._EPOCHS = None
         self._koef = None
         self._ic: tf.Variable = None
         self._bc: tf.Variable = None
 
-        self._model.compile(optimizer=self._optm, loss="mean_squared_error")
+        self._model = model
+        # self._optm = optm
+        self._model.compile(optimizer=optm, loss=lossf)
 
-        if initial_weights != "":
-            self.load_weights(initial_weights)
-        self._init_w = self._model.get_weights()
+        self._init_path = initial_weights
+        if os.path.exists(self._init_path):
+            self._model.load_weights(self._init_path)
 
     # @tf.function
     def f(self, x, y):
         return -2 * tf_pi * tf_pi * tf.sin(tf_pi * y) * tf.sin(tf_pi * x)
+
+    # TODO: make IC function
+    # def icf()
 
     @tf.function
     def _ode(self):
@@ -113,23 +123,24 @@ class PINNModel:
                 # TODO: tf.summary
                 # train_loss_record.append(train_loss)
 
-            if itr % self._EPRINT == 0:
-                # USE TF.PRINT()!!!
+            if itr % self._EPOCHS == 0:
                 tf.print("epoch:", itr, "loss:", train_loss)
 
             grad_w = tape.gradient(train_loss, self._model.trainable_variables)
-            self._optm.apply_gradients(
+            self._model.optimizer.apply_gradients(
                 zip(grad_w, self._model.trainable_variables))
+            # self._optm.apply_gradients(
+            #     zip(grad_w, self._model.trainable_variables))
             del tape
+        tf.print("epoch:", itr, "loss:", train_loss)
 
-    def fit(self, koef, inner, border, EPOCHS, EPRINT):
+    def fit(self, koef, inner, border, EPOCHS):
         start = time.time()
 
         self._koef = tf.constant(koef, dtype=tf.float32)
         self._ic = tf.Variable(inner)
         self._bc = tf.Variable(border)
         self._EPOCHS = tf.Variable(EPOCHS)
-        self._EPRINT = tf.Variable(EPRINT)
         # self._train_loss = []
         self._train_cycle()
 
@@ -139,17 +150,36 @@ class PINNModel:
     def predict(self, area):
         return self._model.predict(area)
 
-    def load(self, path):
+    def load(self, path: str):
         try:
             self._model.load_weights(path)
         except Exception as e:
             print("No such file")
-            print(e)
 
     def save(self, path: str):
-        if not os.path.isfile(path):
-            os.mknod(path)
         self._model.save_weights(path)
 
     def reset(self):
-        self._model.set_weights(self._init_w)
+        # del self._model, self._optm
+        # self._model = model1()
+        # self._optm = optm1()
+        del self._model
+        tf.keras.backend.clear_session()
+        tf.compat.v1.reset_default_graph()
+        
+        self._model = model1()
+        self._model.compile(optimizer=optm1(), loss="mean_squared_error")
+        self._model.load_weights(self._init_path)
+
+        # self._model.compile(optimizer=self._optm, loss="mean_squared_error")
+
+    # def saveM(self, path):
+    #     tf.keras.models.save_model(model=self._model, filepath=path)
+    
+    # def loadM(self, path: str):
+    #     try:
+    #         self._model = tf.keras.models.load_model(path)
+    #         self._model.compile(optimizer=self._optm, loss="mean_squared_error")
+    #     except Exception as e:
+    #         print(e)
+    #         print("No such file")

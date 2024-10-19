@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.typing as npt
 import json
+import os
 from typing import Callable
 
 
@@ -14,9 +15,17 @@ def real_u1(area):
         return np.array([np.sin(np.pi * x) * np.sin(np.pi * y) for x, y in area])
 
 
-def get_koefs():
-    with open('koef.json', 'r') as file:
-        return json.load(file)['koefs']
+def get_data(train: bool) -> dict:
+    with open('data.json', 'r') as file:
+        data = json.load(file)
+    data["x"] = tuple(data["x"])
+    data["y"] = tuple(data["y"])
+    last_sess = 0
+    for f in os.listdir("../models"):
+        if (f.find("initial") != -1):
+            last_sess = max(last_sess, int(f[f.find("s=") + 2:f.find(".init")]))
+    data["session"] = last_sess + int(train)
+    return data
 
 
 class DataGenerator:
@@ -25,6 +34,14 @@ class DataGenerator:
         self._ylim = y_limits
         self._predict = predict
         self._real = real
+
+    @staticmethod
+    def name(koef, sess) -> str:
+        return f"../models/s={sess}.model{koef}.weights.h5"
+
+    @staticmethod
+    def init_name(sess) -> str:
+        return f"../models/s={sess}.initial.weights.h5"
 
     def inner_pairs(self, grid):
         x = np.linspace(self._xlim[0], self._xlim[1],

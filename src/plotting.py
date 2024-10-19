@@ -23,8 +23,9 @@ class NNPlots:
         plt.show()
 
     @staticmethod
-    def plot_error(koefs, error_record):
+    def plot_error(koefs, error_record, name):
         _, plt1 = plt.subplots(1, 1, figsize=(8, 8))
+        plt1.set_title(name)
         plt1.plot(koefs, error_record)
 
     def plot3d(self):
