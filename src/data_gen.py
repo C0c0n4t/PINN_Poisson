@@ -15,16 +15,21 @@ def real_u1(area):
         return np.array([np.sin(np.pi * x) * np.sin(np.pi * y) for x, y in area])
 
 
-def get_data(train: bool) -> dict:
+def get_data(train: bool, sess=None) -> dict:
     with open('data.json', 'r') as file:
         data = json.load(file)
     data["x"] = tuple(data["x"])
     data["y"] = tuple(data["y"])
     last_sess = 0
+    sess_exists = False
     for f in os.listdir("../models"):
-        if (f.find("initial") != -1):
-            last_sess = max(last_sess, int(f[f.find("s=") + 2:f.find(".init")]))
+        if sess != None:
+            if f[f.find("s") + 1:] == sess:
+                sess_exists = True
+        last_sess = max(last_sess, int(
+            f[f.find("s") + 1:]))
     data["session"] = last_sess + int(train)
+    data["session_exists"] = sess_exists
     return data
 
 
@@ -37,11 +42,11 @@ class DataGenerator:
 
     @staticmethod
     def name(koef, sess) -> str:
-        return f"../models/s={sess}.model{koef}.weights.h5"
+        return f"../models/s{sess}/model{koef}.weights.h5"
 
     @staticmethod
     def init_name(sess) -> str:
-        return f"../models/s={sess}.initial.weights.h5"
+        return f"../models/s{sess}/initial.weights.h5"
 
     def inner_pairs(self, grid):
         x = np.linspace(self._xlim[0], self._xlim[1],
