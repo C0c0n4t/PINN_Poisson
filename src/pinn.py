@@ -85,7 +85,11 @@ class PINNModel:
         if os.path.exists(self._init_path):
             self._model.load_weights(self._init_path)
 
+        self.directory = './checkpoints'
+        self.best_loss = tf.Variable(1e10, dtype=tf.float32)
+        self.checkpoint = tf.train.Checkpoint(model=model)
     # @tf.function
+
     def f(self, x, y):
         return -2 * tf_pi * tf_pi * tf.sin(tf_pi * y) * tf.sin(tf_pi * x)
 
@@ -125,14 +129,16 @@ class PINNModel:
 
             if itr % self._EPOCHS == 0:
                 tf.print("epoch:", itr, "loss:", train_loss)
-
+            if tf.less(train_loss, self.best_loss):
+                self.best_loss.assign(train_loss)
+                self.checkpoint.write("../checkpoints/ckpt")
             grad_w = tape.gradient(train_loss, self._model.trainable_variables)
             self._model.optimizer.apply_gradients(
                 zip(grad_w, self._model.trainable_variables))
             # self._optm.apply_gradients(
             #     zip(grad_w, self._model.trainable_variables))
             del tape
-        tf.print("epoch:", itr, "loss:", train_loss)
+        tf.print("epoch:", itr, "loss:", self.best_loss)
 
     def fit(self, koef, inner, border, EPOCHS):
         start = time.time()
@@ -143,7 +149,8 @@ class PINNModel:
         self._EPOCHS = tf.Variable(EPOCHS)
         # self._train_loss = []
         self._train_cycle()
-
+        latest_checkpoint = tf.train.latest_checkpoint('../checkpoints')
+        self.checkpoint.restore(latest_checkpoint)
         print(f"Time past {time.time() - start}\n")
         # return self._train_loss
 
@@ -166,7 +173,7 @@ class PINNModel:
         del self._model
         tf.keras.backend.clear_session()
         tf.compat.v1.reset_default_graph()
-        
+
         self._model = model1()
         self._model.compile(optimizer=optm1(), loss="mean_squared_error")
         self._model.load_weights(self._init_path)
@@ -175,7 +182,7 @@ class PINNModel:
 
     # def saveM(self, path):
     #     tf.keras.models.save_model(model=self._model, filepath=path)
-    
+
     # def loadM(self, path: str):
     #     try:
     #         self._model = tf.keras.models.load_model(path)
