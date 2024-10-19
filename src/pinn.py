@@ -8,7 +8,7 @@ def model1():
     @tf.function
     def custom_activation2(x):
         return tf.sin(5*x)
-    
+
     @tf.function
     def custom_activation(x):
         return tf.sin(x)
@@ -66,6 +66,8 @@ class PINNModel:
 
         self._train_loss = None
 
+        self._EPOCHS = 5000
+        self._EPRINT = 500
         self._koef = None
         self._ic: tf.Variable = None
         self._bc: tf.Variable = None
@@ -104,22 +106,21 @@ class PINNModel:
         return tf.reduce_mean(tf.square(ode_loss)) + self._koef * tf.reduce_mean(tf.square(IC_loss))
 
     @tf.function
-    def _train_cycle(self, EPOCHS, EPRINT):
-        for itr in tf.range(0, EPOCHS):
+    def _train_cycle(self):
+        for itr in tf.range(0, self._EPOCHS):
             with tf.GradientTape() as tape:
                 train_loss = self._ode()
                 # TODO: tf.summary
                 # train_loss_record.append(train_loss)
 
-            # if itr % EPRINT == 0:
-            #     # USE TF.PRINT()!!!
-            #     tf.print("epoch:", itr, "loss:", train_loss)
-                
+            if itr % self._EPRINT == 0:
+                # USE TF.PRINT()!!!
+                tf.print("epoch:", itr, "loss:", train_loss)
+
             grad_w = tape.gradient(train_loss, self._model.trainable_variables)
             self._optm.apply_gradients(
                 zip(grad_w, self._model.trainable_variables))
             del tape
-
 
     def fit(self, koef, inner, border, EPOCHS, EPRINT):
         start = time.time()
@@ -127,8 +128,10 @@ class PINNModel:
         self._koef = tf.constant(koef, dtype=tf.float32)
         self._ic = tf.Variable(inner)
         self._bc = tf.Variable(border)
+        self._EPOCHS = tf.Variable(EPOCHS)
+        self._EPRINT = tf.Variable(EPRINT)
         # self._train_loss = []
-        self._train_cycle(EPOCHS + 1, EPRINT)
+        self._train_cycle()
 
         print(f"Time past {time.time() - start}\n")
         # return self._train_loss
@@ -139,8 +142,9 @@ class PINNModel:
     def load(self, path):
         try:
             self._model.load_weights(path)
-        except:
+        except Exception as e:
             print("No such file")
+            print(e)
 
     def save(self, path: str):
         if not os.path.isfile(path):
