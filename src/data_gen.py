@@ -15,7 +15,7 @@ def real_u1(area):
         return np.array([np.sin(np.pi * x) * np.sin(np.pi * y) for x, y in area])
 
 
-def get_data(train: bool, sess=None) -> dict:
+def get_data(sess=None) -> dict:
     with open('data.json', 'r') as file:
         data = json.load(file)
     data["x"] = tuple(data["x"])
@@ -23,12 +23,12 @@ def get_data(train: bool, sess=None) -> dict:
     last_sess = 0
     sess_exists = False
     for f in os.listdir("../models"):
-        if sess != None:
-            if f[f.find("s") + 1:] == sess:
+        if f.find("zip") == -1:
+            if int(f[f.find("s") + 1:]) == sess:
                 sess_exists = True
-        last_sess = max(last_sess, int(
-            f[f.find("s") + 1:]))
-    data["session"] = last_sess + int(train)
+            last_sess = max(last_sess, int(
+                f[f.find("s") + 1:]))
+    data["last_session"] = last_sess
     data["session_exists"] = sess_exists
     return data
 

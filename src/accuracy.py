@@ -19,7 +19,10 @@ class AccuracyCalc:
 
     def update(self, grid):
         self._real_val = self._dg.real_pairs(grid)
-        self._pred_val = self._dg.prediction_pairs(grid)
+        self._pred_val = self._dg.prediction_pairs(grid).ravel()
+
+    def update_predicitons(self, grid):
+        self._pred_val = self._dg.prediction_pairs(grid).ravel()
 
     @staticmethod
     def _to_percent(error_function):
