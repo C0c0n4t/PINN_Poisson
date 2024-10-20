@@ -93,46 +93,40 @@ class PINNModel:
     # def icf()
 
     @tf.function
-    def _ode(self):
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
-            tape.watch(self._ic)
-            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape1:
-                tape1.watch(self._ic)
-                u = self._model(self._ic)
-            grad_u = tape1.gradient(u, self._ic)
-            du_dx = grad_u[..., 0]
-            du_dy = grad_u[..., 1]
-            del tape1
+    def _train_step(self):
+        with tf.GradientTape() as tape:        
+            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape2:
+                tape2.watch(self._ic)
+                with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape1:
+                    tape1.watch(self._ic)
+                    u = self._model(self._ic)
+                grad_u = tape1.gradient(u, self._ic)
+                du_dx = grad_u[..., 0]
+                du_dy = grad_u[..., 1]
+                del tape1
 
-        d2u_dx2 = tape.gradient(du_dx, self._ic)[..., 0]
-        d2u_dy2 = tape.gradient(du_dy, self._ic)[..., 1]
+            d2u_dx2 = tape2.gradient(du_dx, self._ic)[..., 0]
+            d2u_dy2 = tape2.gradient(du_dy, self._ic)[..., 1]
+            del tape2
+
+            x = self._ic[..., 0]
+            y = self._ic[..., 1]
+            ode_loss = d2u_dx2 + d2u_dy2 - self.f(x, y)
+            IC_loss = self._model(self._bc) - tf.zeros((len(self._bc), 1))
+
+            loss = tf.reduce_mean(tf.square(ode_loss)) + self._koef * tf.reduce_mean(tf.square(IC_loss))
+    
+        grad_w = tape.gradient(loss, self._model.trainable_variables)
+        self._model.optimizer.apply_gradients(
+            zip(grad_w, self._model.trainable_variables))
+        # self._optm.apply_gradients(
+        #     zip(grad_w, self._model.trainable_variables))
         del tape
 
-        x = self._ic[..., 0]
-        y = self._ic[..., 1]
-        ode_loss = d2u_dx2 + d2u_dy2 - self.f(x, y)
-        IC_loss = self._model(self._bc) - tf.zeros((len(self._bc), 1))
-
-        return tf.reduce_mean(tf.square(ode_loss)) + self._koef * tf.reduce_mean(tf.square(IC_loss))
-
-    @tf.function
-    def _train_cycle(self):
-        for itr in tf.range(0, self._EPOCHS):
-            with tf.GradientTape() as tape:
-                train_loss = self._ode()
-                # TODO: tf.summary
-                # train_loss_record.append(train_loss)
-
-            if itr % self._EPOCHS == 0:
-                tf.print("epoch:", itr, "loss:", train_loss)
-
-            grad_w = tape.gradient(train_loss, self._model.trainable_variables)
-            self._model.optimizer.apply_gradients(
-                zip(grad_w, self._model.trainable_variables))
-            # self._optm.apply_gradients(
-            #     zip(grad_w, self._model.trainable_variables))
-            del tape
-        tf.print("epoch:", itr, "loss:", train_loss)
+    # @tf.function
+    def _train_loop(self):
+        for _ in tf.range(0, self._EPOCHS):
+            self._train_step()
 
     def fit(self, koef, inner, border, EPOCHS):
         start = time.time()
@@ -142,7 +136,7 @@ class PINNModel:
         self._bc = tf.Variable(border)
         self._EPOCHS = tf.Variable(EPOCHS)
         # self._train_loss = []
-        self._train_cycle()
+        self._train_loop()
 
         print(f"Time past {time.time() - start}\n")
         # return self._train_loss

@@ -1,103 +1,66 @@
 import tensorflow as tf
-from tensorflow import keras
+from tensorflow.python import keras
+from math import pi
+import numpy as np
+from data_gen import DataGenerator, real_u1
 
-import kerastuner as kt
+tf_pi = tf.constant(pi)
+
+@tf.function
+def custom_activation2(x):
+    return tf.sin(5*x)
+
+@tf.function
+def custom_activation(x):
+    return tf.sin(x)
 
 
-class MyHyperModel(kt.HyperModel):
-    def build(self, hp):
+class pinnModel(keras.Model):
+    def __init__(self):
+        super().__init__()
+        self.dense1 = keras.layers.Dense(units=32, activation=custom_activation2)
+        self.denese2 = keras.layers.Dense(units=32, activation=custom_activation)
 
-        @tf.function
-        def custom_activation2(x):
-            return tf.sin(5*x)
+    def f(self, x, y):
+        return -2 * tf_pi * tf_pi * tf.sin(tf_pi * y) * tf.sin(tf_pi * x)
 
-        def custom_activation(x):
-            return tf.sin(x)
+    # data - inside, ic - inital conditon
+    def train_step(self, data, ic, k):
+        with tf.GradientTape() as tape:
+            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape1:
+                tape1.watch(data)
+                with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape2:
+                    tape2.watch(data)
+                    u = self(data, training=True)
+                grad_u = tape2.gradient(u, data)
+                du_dx = grad_u[..., 0]
+                du_dy = grad_u[..., 1]
+                del tape2
 
-        model = tf.keras.Sequential(
-            [
-                tf.keras.layers.Input((2,)),
-                tf.keras.layers.Dense(units=32, activation=custom_activation2),
-                tf.keras.layers.Dense(units=32, activation=custom_activation),
-                tf.keras.layers.Dense(units=32, activation=custom_activation),
-                tf.keras.layers.Dense(units=32, activation=custom_activation),
-                tf.keras.layers.Dense(units=32, activation=custom_activation),
-                keras.layers.Dense(
-                    units=hp.Choice("units", [32, 64, 128]), activation="relu"
-                ),
-                tf.keras.layers.Dense(units=1),
-            ]
-        )
-        return model
+            d2u_dx2 = tape1.gradient(du_dx, data)[..., 0]
+            d2u_dy2 = tape1.gradient(du_dy, data)[..., 1]
+            del tape1
 
-    def fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
-        # Convert the datasets to tf.data.Dataset.
-        batch_size = hp.Int("batch_size", 32, 128, step=32, default=64)
-        train_ds = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(
-            batch_size
-        )
-        validation_data = tf.data.Dataset.from_tensor_slices(validation_data).batch(
-            batch_size
-        )
+            x = data[..., 0]
+            y = data[..., 1]
+            ode_loss = d2u_dx2 + d2u_dy2 - self.f(x, y)
+            IC_loss = self(ic) - tf.zeros((len(ic), 1))
 
-        # Define the optimizer.
-        optimizer = keras.optimizers.Adam(
-            hp.Float("learning_rate", 1e-4, 1e-2, sampling="log", default=1e-3)
-        )
-        loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+            loss = tf.reduce_mean(tf.square(ode_loss)) + \
+                k * tf.reduce_mean(tf.square(IC_loss))
 
-        # The metric to track validation loss.
-        epoch_loss_metric = keras.metrics.Mean()
+        grad = tape.gradient(loss, self.trainable_variables)
+        self.optimizer.apply_gradients(
+            zip(grad, self.trainable_variables))
+        del tape
 
-        # Function to run the train step.
-        @tf.function
-        def run_train_step(images, labels):
-            with tf.GradientTape() as tape:
-                logits = model(images)
-                loss = loss_fn(labels, logits)
-                # Add any regularization losses.
-                if model.losses:
-                    loss += tf.math.add_n(model.losses)
-            gradients = tape.gradient(loss, model.trainable_variables)
-            optimizer.apply_gradients(
-                zip(gradients, model.trainable_variables))
+        # Return a dict mapping metric names to current value
+        return {}
+    
 
-        # Function to run the validation step.
-        @tf.function
-        def run_val_step(images, labels):
-            logits = model(images)
-            loss = loss_fn(labels, logits)
-            # Update the metric.
-            epoch_loss_metric.update_state(loss)
+model = pinnModel()
 
-        # Assign the model to the callbacks.
-        for callback in callbacks:
-            callback.set_model(model)
+model.compile(optimizer="adam", loss="mse", metrics=[])
 
-        # Record the best validation loss value
-        best_epoch_loss = float("inf")
-
-        # The custom training loop.
-        for epoch in range(2):
-            print(f"Epoch: {epoch}")
-
-            # Iterate the training data to run the training step.
-            for images, labels in train_ds:
-                run_train_step(images, labels)
-
-            # Iterate the validation data to run the validation step.
-            for images, labels in validation_data:
-                run_val_step(images, labels)
-
-            # Calling the callbacks after epoch.
-            epoch_loss = float(epoch_loss_metric.result().numpy())
-            for callback in callbacks:
-                # The "my_metric" is the objective passed to the tuner.
-                callback.on_epoch_end(epoch, logs={"my_metric": epoch_loss})
-            epoch_loss_metric.reset_state()
-
-            print(f"Epoch loss: {epoch_loss}")
-            best_epoch_loss = min(best_epoch_loss, epoch_loss)
-
-        # Return the evaluation metric value.
-        return best_epoch_loss
+dg = DataGenerator((0, 2), (0, 2), model, real_u1)
+model.fit(dg.area_pairs((50, 50)), dg.inner_pairs((50, 50)), epochs=3)
