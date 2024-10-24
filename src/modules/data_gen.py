@@ -2,6 +2,7 @@ import numpy as np
 import numpy.typing as npt
 import json
 import os
+import re
 from typing import Callable
 
 
@@ -15,7 +16,7 @@ def real_u1(area):
         return np.array([np.sin(np.pi * x) * np.sin(np.pi * y) for x, y in area])
 
 
-def get_data(sess=None) -> dict:
+def get_data(sess: int) -> dict:
     with open('data.json', 'r') as file:
         data = json.load(file)
     data["x"] = tuple(data["x"])
@@ -23,7 +24,7 @@ def get_data(sess=None) -> dict:
     last_sess = 0
     sess_exists = False
     for f in os.listdir("../models"):
-        if f.find("zip") == -1:
+        if re.match("^sd+$", f):
             if int(f[f.find("s") + 1:]) == sess:
                 sess_exists = True
             last_sess = max(last_sess, int(
@@ -34,7 +35,7 @@ def get_data(sess=None) -> dict:
 
 
 class DataGenerator:
-    def __init__(self, x_limits, y_limits, predict: Callable, real: Callable):
+    def __init__(self, x_limits: tuple, y_limits: tuple, predict: Callable | None, real: Callable):
         self._xlim = x_limits
         self._ylim = y_limits
         self._predict = predict
@@ -47,6 +48,9 @@ class DataGenerator:
     @staticmethod
     def init_name(sess) -> str:
         return f"../models/s{sess}/initial.weights.h5"
+
+    def update_predict(self, predict: Callable):
+        self._predict = predict
 
     def inner_pairs(self, grid):
         x = np.linspace(self._xlim[0], self._xlim[1],
@@ -77,7 +81,8 @@ class DataGenerator:
         return self._real(self.area_pairs(grid))
 
     def prediction_pairs(self, grid):
-        return self._predict(self.area_pairs(grid))
+        if not (self._predict is None):
+            return self._predict(self.area_pairs(grid))
 
     def plot_area(self, grid):
         x = np.linspace(self._xlim[0], self._xlim[1], grid[0])
@@ -89,7 +94,12 @@ class DataGenerator:
                 pred_coord.append([_x, _y])
         pred_coord = np.array(pred_coord)
         true_u = self._real((x, y))
-        pred_u = self._predict(pred_coord).ravel().reshape(grid)
+
+        if not (self._predict is None):
+            pred_u = self._predict(pred_coord).ravel().reshape(grid)
+        else:
+            raise Exception(
+                "В генераторе для обучения вы пытаетесь использовать predict")
         return (x, y, true_u, pred_u)
 
     @staticmethod

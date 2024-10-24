@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.python import keras
 from math import pi
 import numpy as np
-from data_gen import DataGenerator, real_u1
+from modules.data_gen import DataGenerator, real_u1
 
 tf_pi = tf.constant(pi)
 

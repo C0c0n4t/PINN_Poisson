@@ -1,5 +1,5 @@
 import numpy as np
-from data_gen import DataGenerator
+from modules.data_gen import DataGenerator
 # from typing
 
 

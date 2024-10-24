@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import random
-from data_gen import DataGenerator
+from modules.data_gen import DataGenerator
 import numpy as np
 
 

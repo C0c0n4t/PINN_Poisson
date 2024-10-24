@@ -1,6 +1,4 @@
-models/
-checkpoints/
-
+models/checkpoints/
 models/s*/
 .vscode/
 
@@ -11,5 +9,5 @@ env/
 venv/
 
 # pycache
-src/pycache/
-src/__pycache__/
+pycache/
+__pycache__/
