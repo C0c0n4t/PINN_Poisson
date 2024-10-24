@@ -124,13 +124,13 @@ class PINNModel:
     def _train_cycle(self):
         for itr in tf.range(0, self._EPOCHS):
             with tf.GradientTape() as tape:
-                train_loss = self._ode()
+                train_loss = self._train_step()
                 # TODO: tf.summary
                 # train_loss_record.append(train_loss)
 
             if itr % self._EPOCHS == 0:
                 tf.print("epoch:", itr, "loss:", train_loss)
-            if tf.less(train_loss, self.best_loss):
+            if  tf.less(train_loss, self.best_loss):
                 self.best_loss.assign(train_loss)
                 self.checkpoint.write("../checkpoints/ckpt")
             grad_w = tape.gradient(train_loss, self._model.trainable_variables)
