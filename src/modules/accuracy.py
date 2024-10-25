@@ -15,7 +15,11 @@ class AccuracyCalc:
     def __init__(self, dg: DataGenerator, grid):
         self._dg = dg
         self._real_val = self._dg.real_pairs(grid)
-        self._pred_val = self._dg.prediction_pairs(grid).ravel()
+        
+        if (self._dg.prediction_pairs(grid) != None):
+            self._pred_val = self._dg.prediction_pairs(grid).ravel()
+        else:
+            print("No predict function set")
 
     def update(self, grid):
         self._real_val = self._dg.real_pairs(grid)

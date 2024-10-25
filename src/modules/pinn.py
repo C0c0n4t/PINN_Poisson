@@ -2,7 +2,7 @@ import os
 import time
 from math import pi
 import tensorflow as tf
-from typing import Iterable
+from typing import Iterable, Callable
 
 
 def optm1():
@@ -37,7 +37,6 @@ def model1():
 
     return model
 
-
 def model2():
     @tf.function
     def custom_activation(x):
@@ -57,7 +56,34 @@ def model2():
     return model
 
 
-tf_pi = tf.constant(pi)
+def model3():
+    @tf.function
+    def custom_activation(x):
+        return tf.sin(x)
+
+    model = tf.keras.Sequential(
+        [
+            tf.keras.layers.Input((2,)),
+            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=1),
+        ]
+    )
+
+    return model
+
+
+@tf.function
+def de1(x, y):
+    tf_pi = tf.constant(pi)
+    return tf.multiply(-2., tf_pi) * tf_pi * tf.sin(tf_pi * y) * tf.sin(tf_pi * x)
+
+
+@tf.function
+def ic1(xy):
+    return tf.zeros((xy.shape[0], 1))
 
 
 class PINNModel:
@@ -69,13 +95,18 @@ class PINNModel:
     """
 
     # TODO : pass f and icf as parameters
-    def __init__(self, model, optm, lossf="mse", initial_weights: str = "") -> None:
+    def __init__(self, de: Callable, ic: Callable,
+                 model, optm, lossf="mse", initial_weights: str = "") -> None:
         self._train_loss = None
 
         self._EPOCHS = None
         self._koef = None
-        self._ic: tf.Variable | None = None
-        self._bc: tf.Variable | None = None
+
+        self._ic = ic
+        self._de = de
+
+        self._ins: tf.Variable | None = None
+        self._bor: tf.Variable | None = None
 
         self._model = model
         # self._optm = optm
@@ -85,73 +116,64 @@ class PINNModel:
         if os.path.exists(self._init_path):
             self._model.load_weights(self._init_path)
 
-        self.directory = './checkpoints'
-        self.best_loss = tf.Variable(1e10, dtype=tf.float32)
-        self.checkpoint = tf.train.Checkpoint(model=model)
-    
-    @tf.function
-    def f(self, x, y):
-        return tf.multiply(-2., tf_pi) * tf_pi * tf.sin(tf_pi * y) * tf.sin(tf_pi * x)
-
-    # TODO: make IC function
-    # def icf()
+        # self.cdir = '../model/checkpoints'
+        self.best_loss = tf.Variable(1e3, dtype=tf.float32)
+        self.checkpoint = tf.train.Checkpoint(model=model)    
 
     @tf.function
     def _train_step(self):
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
-            tape.watch(self._ic)
-            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape1:
-                tape1.watch(self._ic)
-                u = self._model(self._ic)
-            grad_u = tape1.gradient(u, self._ic)
-            du_dx = grad_u[..., 0]
-            du_dy = grad_u[..., 1]
-            del tape1
+        with tf.GradientTape() as tape:
+            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape2:
+                tape2.watch(self._ins)
+                with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape1:
+                    tape1.watch(self._ins)
+                    u = self._model(self._ins)
+                grad_u = tape1.gradient(u, self._ins)
+                du_dx = grad_u[..., 0]
+                du_dy = grad_u[..., 1]
+                del tape1
 
-        d2u_dx2 = tape.gradient(du_dx, self._ic)[..., 0]
-        d2u_dy2 = tape.gradient(du_dy, self._ic)[..., 1]
+            d2u_dx2 = tape2.gradient(du_dx, self._ins)[..., 0]
+            d2u_dy2 = tape2.gradient(du_dy, self._ins)[..., 1]
+            del tape2
+
+            ode_loss = d2u_dx2 + d2u_dy2 - self._de(self._ins[..., 0], self._ins[..., 1])
+            IC_loss = self._model(self._bor) - self._ic(self._bor)
+
+            loss = tf.reduce_mean(tf.square(ode_loss)) + self._koef * tf.reduce_mean(tf.square(IC_loss))
+
+        # save model with best weights
+        if tf.less(loss, self.best_loss):
+            self.best_loss.assign(loss)
+            self.checkpoint.write("../models/checkpoints/ckpt")
+
+        grad_w = tape.gradient(loss, self._model.trainable_variables)
+        self._model.optimizer.apply_gradients(
+            zip(grad_w, self._model.trainable_variables))
+        # self._optm.apply_gradients(
+        #     zip(grad_w, self._model.trainable_variables))
         del tape
-
-        x = self._ic[..., 0]
-        y = self._ic[..., 1]
-        ode_loss = d2u_dx2 + d2u_dy2 - self.f(x, y)
-        IC_loss = self._model(self._bc) - tf.zeros((self._bc.shape[0], 1))
-
-        return tf.reduce_mean(tf.square(ode_loss)) + self._koef * tf.reduce_mean(tf.square(IC_loss))
-
-    @tf.function
+    
     def _train_loop(self):
-        for itr in tf.range(0, self._EPOCHS):
-            with tf.GradientTape() as tape:
-                train_loss = self._train_step()
+        for _ in tf.range(0, self._EPOCHS):
+            self._train_step()
 
-            if tf.math.mod(itr, self._EPOCHS) == 0:
-                tf.print("epoch:", itr, "loss:", train_loss)
-            
-            # save model with best weights
-            if tf.less(train_loss, self.best_loss):
-                self.best_loss.assign(train_loss)
-                self.checkpoint.write("../models/checkpoints/ckpt")
-                
-            grad_w = tape.gradient(train_loss, self._model.trainable_variables)
-            self._model.optimizer.apply_gradients(
-                zip(grad_w, self._model.trainable_variables))
-            # self._optm.apply_gradients(
-            #     zip(grad_w, self._model.trainable_variables))
-            del tape
-        tf.print("epoch:", itr, "loss:", self.best_loss)
 
-    def fit(self, koef, inner, border, EPOCHS):
+    def fit(self, koef, inner, border, EPOCHS: int,
+            LOSS: int | None = None, ERROR: int | None = None):
         start = time.time()
 
+        # measuring time
         self._koef = tf.constant(koef, dtype=tf.float32)
-        self._ic = tf.Variable(inner)
-        self._bc = tf.Variable(border)
+        self._ins = tf.Variable(inner)
+        self._bor = tf.Variable(border)
+
         self._EPOCHS = tf.Variable(EPOCHS)
         self._train_loop()
 
-        latest_checkpoint = tf.train.latest_checkpoint('../checkpoints')
+        latest_checkpoint = tf.train.latest_checkpoint('../models/checkpoints')
         self.checkpoint.restore(latest_checkpoint)
+        #
 
         print(f"Time past {time.time() - start}\n")
 
@@ -162,7 +184,7 @@ class PINNModel:
         inner = tf.Variable(inner)
         border = tf.Variable(border)
         koef = tf.constant(float(koef))
-        
+
         with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
             tape.watch(inner)
             with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape1:
@@ -179,7 +201,7 @@ class PINNModel:
 
         x = inner[..., 0]
         y = inner[..., 1]
-        ode_loss = d2u_dx2 + d2u_dy2 - self.f(x, y)
+        ode_loss = d2u_dx2 + d2u_dy2 - self._de(x, y)
         IC_loss = self._model(border) - tf.zeros((border.shape[0], 1))
 
         return (tf.reduce_mean(tf.square(ode_loss)) + koef * tf.reduce_mean(tf.square(IC_loss))).numpy()
