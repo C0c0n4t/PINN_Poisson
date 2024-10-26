@@ -24,7 +24,7 @@ def get_data(sess: int) -> dict:
     last_sess = 0
     sess_exists = False
     for f in os.listdir("../models"):
-        if re.match("^sd+$", f):
+        if re.match("^s\d+$", f):
             if int(f[f.find("s") + 1:]) == sess:
                 sess_exists = True
             last_sess = max(last_sess, int(
