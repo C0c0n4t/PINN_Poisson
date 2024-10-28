@@ -23,10 +23,14 @@ class NNPlots:
         plt.show()
 
     @staticmethod
-    def plot_error(koefs, error_record, name):
+    def plot_error(koefs, error_record, name, x_scale=None, y_scale=None):
         _, plt1 = plt.subplots(1, 1, figsize=(8, 8))
         plt1.set_title(name)
         plt1.plot(koefs, error_record)
+        if x_scale != None:
+            plt.xscale(x_scale)
+        if y_scale != None:
+            plt.yscale(y_scale)
 
     def plot3d(self):
         """
