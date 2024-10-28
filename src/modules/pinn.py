@@ -37,6 +37,7 @@ def model1():
 
     return model
 
+
 def model2():
     @tf.function
     def custom_activation(x):
@@ -95,8 +96,8 @@ class PINNModel:
     """
 
     # TODO : pass f and icf as parameters
-    def __init__(self, de: Callable, ic: Callable,
-                 model, optm, lossf="mse", initial_weights: str = "") -> None:
+    def __init__(self,
+                 model, optm, lossf="mse", initial_weights: str = "", de: Callable = de1, ic: Callable = ic1) -> None:
         self._train_loss = None
 
         self._EPOCHS = None
@@ -118,7 +119,7 @@ class PINNModel:
 
         # self.cdir = '../model/checkpoints'
         self.best_loss = tf.Variable(1e3, dtype=tf.float32)
-        self.checkpoint = tf.train.Checkpoint(model=model)    
+        self.checkpoint = tf.train.Checkpoint(model=model)
 
     @tf.function
     def _train_step(self):
@@ -137,10 +138,13 @@ class PINNModel:
             d2u_dy2 = tape2.gradient(du_dy, self._ins)[..., 1]
             del tape2
 
-            ode_loss = d2u_dx2 + d2u_dy2 - self._de(self._ins[..., 0], self._ins[..., 1])
+            ode_loss = d2u_dx2 + d2u_dy2 - \
+                self._de(self._ins[..., 0], self._ins[..., 1])
             IC_loss = self._model(self._bor) - self._ic(self._bor)
 
-            loss = tf.reduce_mean(tf.square(ode_loss)) + self._koef * tf.reduce_mean(tf.square(IC_loss))
+            loss = tf.reduce_mean(tf.square(ode_loss)) + \
+                self._koef * tf.reduce_mean(tf.square(IC_loss))
+            # tf.print("loss", loss)
 
         # save model with best weights
         if tf.less(loss, self.best_loss):
@@ -153,11 +157,10 @@ class PINNModel:
         # self._optm.apply_gradients(
         #     zip(grad_w, self._model.trainable_variables))
         del tape
-    
+
     def _train_loop(self):
         for _ in tf.range(0, self._EPOCHS):
             self._train_step()
-
 
     def fit(self, koef, inner, border, EPOCHS: int,
             LOSS: int | None = None, ERROR: int | None = None):
