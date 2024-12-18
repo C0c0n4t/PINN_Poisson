@@ -2,7 +2,7 @@ import os
 import time
 from math import pi
 import tensorflow as tf
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Any
 
 
 def optm1():
@@ -121,6 +121,8 @@ class PINNModel:
         self.best_loss = tf.Variable(1e3, dtype=tf.float32)
         self.checkpoint = tf.train.Checkpoint(model=model)
 
+        self._summ_wr: Any = None
+
     @tf.function
     def _train_step(self):
         with tf.GradientTape() as tape:
@@ -158,11 +160,18 @@ class PINNModel:
         #     zip(grad_w, self._model.trainable_variables))
         del tape
 
-    def _train_loop(self):
-        for _ in tf.range(0, self._EPOCHS):
-            self._train_step()
+        return loss
 
-    def fit(self, koef, inner, border, EPOCHS: int,
+    def _train_loop(self):
+        for i in tf.range(0, self._EPOCHS):
+            loss = self._train_step()
+
+            # write loss
+            if tf.logical_and(tf.equal(tf.math.floormod(i, 200), 0), self._summ_wr != None):
+                with self._summ_wr.as_default():
+                    tf.summary.scalar('loss', loss, step=tf.cast(i, tf.int64))
+
+    def fit(self, koef, inner, border, EPOCHS: int, summ_path: str = "",
             LOSS: int | None = None, ERROR: int | None = None):
         start = time.time()
 
@@ -172,7 +181,13 @@ class PINNModel:
         self._bor = tf.Variable(border)
 
         self._EPOCHS = tf.Variable(EPOCHS)
+
+        # if (summ_path != ""):
+        #     self._summ_wr = tf.summary.create_file_writer(summ_path)
+
         self._train_loop()
+
+        # self._summ_wr = None
 
         latest_checkpoint = tf.train.latest_checkpoint('../models/checkpoints')
         self.checkpoint.restore(latest_checkpoint)
