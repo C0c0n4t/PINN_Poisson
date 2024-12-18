@@ -80,9 +80,23 @@ class DataGenerator:
     def real_pairs(self, grid):
         return self._real(self.area_pairs(grid))
 
+    def real_pairs_border(self, grid):
+        return self._real(self.border_pairs(grid))
+
+    def real_pairs_inner(self, grid):
+        return self._real(self.inner_pairs(grid))
+
     def prediction_pairs(self, grid):
         if not (self._predict is None):
             return self._predict(self.area_pairs(grid))
+
+    def prediction_pairs_border(self, grid):
+        if not (self._predict is None):
+            return self._predict(self.border_pairs(grid))
+
+    def prediction_pairs_inner(self, grid):
+        if not (self._predict is None):
+            return self._predict(self.inner_pairs(grid))
 
     def plot_area(self, grid):
         x = np.linspace(self._xlim[0], self._xlim[1], grid[0])

@@ -15,27 +15,42 @@ class AccuracyCalc:
     def __init__(self, dg: DataGenerator, grid):
         self._dg = dg
         self._real_val = self._dg.real_pairs(grid)
-        
-        if (self._dg.prediction_pairs(grid) != None):
+        self._real_val_inner = self._dg.real_pairs_inner(grid)
+        self._real_val_border = self._dg.real_pairs_border(grid)
+        if not (self._dg.prediction_pairs(grid) is None):
             self._pred_val = self._dg.prediction_pairs(grid).ravel()
+            self._pred_val_inner = self._dg.prediction_pairs_inner(
+                grid).ravel()
+            self._pred_val_border = self._dg.prediction_pairs_border(
+                grid).ravel()
         else:
             print("No predict function set")
 
     def update(self, grid):
         self._real_val = self._dg.real_pairs(grid)
         self._pred_val = self._dg.prediction_pairs(grid).ravel()
+        self._real_val_inner = self._dg.real_pairs_inner(grid)
+        self._real_val_border = self._dg.real_pairs_border(grid)
+        self._pred_val_inner = self._dg.prediction_pairs_inner(
+            grid).ravel()
+        self._pred_val_border = self._dg.prediction_pairs_border(
+            grid).ravel()
 
     def update_predicitons(self, grid):
         self._pred_val = self._dg.prediction_pairs(grid).ravel()
+        self._pred_val_inner = self._dg.prediction_pairs_inner(
+            grid).ravel()
+        self._pred_val_border = self._dg.prediction_pairs_border(
+            grid).ravel()
 
-    @staticmethod
+    @ staticmethod
     def _to_percent(error_function):
         def wrapper_to_percent(*args, **kwargs):
             return error_function(*args, **kwargs) * 100
 
         return wrapper_to_percent
 
-    @_to_percent
+    @ _to_percent
     def good_perc_rel(self, rel_dis: float) -> float:
         """
         Percent of close values, by relative distance
@@ -44,7 +59,7 @@ class AccuracyCalc:
             np.isclose(self._pred_val, self._real_val, rtol=rel_dis)
         ) / len(self._real_val)
 
-    @_to_percent
+    @ _to_percent
     def good_perc_abs(self, abs_dis: float) -> float:
         """
         Percent of close values, by absolute distance
@@ -53,7 +68,7 @@ class AccuracyCalc:
             np.isclose(self._pred_val, self._real_val, atol=abs_dis)
         ) / len(self._real_val)
 
-    @_to_percent
+    @ _to_percent
     # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5570302/
     def ve_acc(self) -> float:
         """
@@ -78,11 +93,35 @@ class AccuracyCalc:
             )
         )
 
+    def mse_border(self):
+        """
+        Mean Squared Error for border
+        """
+        return np.mean(np.square(self._real_val_border - self._pred_val_border))
+
+    def mse_inner(self):
+        """
+        Mean Squared Error for inner
+        """
+        return np.mean(np.square(self._real_val_inner - self._pred_val_inner))
+
     def mse(self):
         """
         Mean Squared Error
         """
         return np.mean(np.square(self._real_val - self._pred_val))
+
+    def maxe_border(self):
+        """
+        Maximum Error for border
+        """
+        return np.max(np.abs(self._real_val_border - self._pred_val_border))
+
+    def maxe_inner(self):
+        """
+        Maximum Error for inner
+        """
+        return np.max(np.abs(self._real_val_inner - self._pred_val_inner))
 
     def maxe(self):
         """
