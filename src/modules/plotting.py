@@ -23,14 +23,34 @@ class NNPlots:
         plt.show()
 
     @staticmethod
-    def plot_error(koefs, error_record, name, x_scale=None, y_scale=None):
-        _, plt1 = plt.subplots(1, 1, figsize=(8, 8))
-        plt1.set_title(name)
+    def plot_error(title, koefs, error_record, name, x_scale=None, y_scale=None):
+        fig, plt1 = plt.subplots(1, 1, figsize=(8, 8))
+        plt1.set_title(title)
+        plt1.set_ylabel(name)
+        plt1.set_xlabel("Parameter λ")
         plt1.plot(koefs, error_record)
+        plt1.grid(True, alpha=0.7)
         if x_scale != None:
             plt.xscale(x_scale)
         if y_scale != None:
             plt.yscale(y_scale)
+        fig.savefig(f'{title}-{name}.png')
+
+    @staticmethod
+    def plot_error_mult(labels, ind, data, name, x_scale=None, y_scale=None):
+        fig, plt1 = plt.subplots(1, 1, figsize=(8, 8))
+        plt1.set_ylabel(name)
+        plt1.set_xlabel("Parameter λ")
+        for label, d in zip(labels, data):
+            plt1.plot(d[0], d[ind], label=label)
+
+        plt1.legend()
+        plt1.grid(True, alpha=0.7)
+        if x_scale != None:
+            plt.xscale(x_scale)
+        if y_scale != None:
+            plt.yscale(y_scale)
+        fig.savefig(f'all-{name}.png')
 
     def plot3d(self):
         """
@@ -157,6 +177,37 @@ class NNPlots:
         real.set(title="Real")
         diff.legend(["Real - Predicted"])
         fig.colorbar(diffc, ax=diff)
+
+    def plot2d_contour_mult(
+            self, color_map="coolwarm", contour_levels=15, linestyle="dashed"):
+
+        for name, path, val in zip(["Настоящие", "Предсказанные", "Разность"],
+                                   [1, 2, 3],
+                                   [self.real_val, self.pred_val, self.real_val - self.pred_val]):
+
+            fig, axes = plt.subplots()
+            axes.contour(
+                self.x,
+                self.y,
+                val,
+                levels=contour_levels,
+                linewidths=1,
+                linestyle=linestyle,
+                colors=["black"],
+                alpha=1,
+            )
+            axesc = axes.contourf(
+                self.x,
+                self.y,
+                val,
+                levels=100,
+                cmap=color_map,
+                alpha=0.6,
+            )
+            axes.set_title(name)
+            fig.colorbar(axesc, ax=axes)
+            fig.savefig(f"../plots/{path}heat.png")
+
 
     def plot2d_fix_x(self, x_i=None):
         """

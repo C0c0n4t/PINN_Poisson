@@ -2,6 +2,8 @@ import os
 import time
 from math import pi
 import tensorflow as tf
+from tensorflow.python.keras.models import Sequential, load_model
+from tensorflow.python.keras.layers import Input, Dense
 from typing import Iterable, Callable, Any
 
 
@@ -20,18 +22,18 @@ def model1():
         return tf.sin(5*x)
 
     @tf.function
-    def custom_activation(x):
+    def custom_activation1(x):
         return tf.sin(x)
 
     model = tf.keras.Sequential(
         [
-            tf.keras.layers.Input((2,)),
-            tf.keras.layers.Dense(units=32, activation=custom_activation2),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
-            tf.keras.layers.Dense(units=1),
+            Input((2,)),
+            Dense(units=32, activation=custom_activation2),
+            Dense(units=32, activation=custom_activation1),
+            Dense(units=32, activation=custom_activation1),
+            Dense(units=32, activation=custom_activation1),
+            Dense(units=32, activation=custom_activation1),
+            Dense(units=1),
         ]
     )
 
@@ -40,16 +42,17 @@ def model1():
 
 def model2():
     @tf.function
-    def custom_activation(x):
+    def custom_activation1(x):
         return tf.sin(x)
 
     model = tf.keras.Sequential(
         [
             tf.keras.layers.Input((2,)),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
             tf.keras.layers.Dense(units=1),
         ]
     )
@@ -59,16 +62,27 @@ def model2():
 
 def model3():
     @tf.function
-    def custom_activation(x):
+    def custom_activation2(x):
+        return tf.sin(5*x)
+
+    @tf.function
+    def custom_activation1(x):
         return tf.sin(x)
 
     model = tf.keras.Sequential(
         [
             tf.keras.layers.Input((2,)),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
-            tf.keras.layers.Dense(units=32, activation=custom_activation),
+            tf.keras.layers.Dense(units=32, activation=custom_activation2),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
+            tf.keras.layers.Dense(units=32, activation=custom_activation1),
             tf.keras.layers.Dense(units=1),
         ]
     )
@@ -85,6 +99,39 @@ def de1(x, y):
 @tf.function
 def ic1(xy):
     return tf.zeros((xy.shape[0], 1))
+
+
+# @tf.function
+# def de2(x, y):
+#     tf_pi = tf.constant(pi)
+#     return tf.multiply(-2., tf_pi) * tf_pi * tf.sin(tf_pi * y) * tf.sin(tf_pi * x)
+
+
+# @tf.function
+# def ic2(xy):
+#     return tf.zeros((xy.shape[0], 1))
+
+
+def print_model_summary_with_activations(model):
+    print(f"Model: {model.name}")
+    print("=================================================================")
+    print(f"{'Layer (type)':<20} {'Param #':<10} {'Activation':<15}")
+    print("=================================================================")
+
+    for layer in model.layers:
+        layer_name = layer.name
+        layer_type = layer.__class__.__name__
+        param_count = layer.count_params()
+        activation = layer.activation.__name__ if hasattr(layer, 'activation') else 'None'
+
+        print(f"{layer_name} ({layer_type})".ljust(20),
+              f"{param_count}".ljust(10),
+              f"{activation}".ljust(15))
+
+    print("=================================================================")
+    print(f"Total params: {model.count_params()}")
+    print(f"Trainable params: {model.count_params()}")
+    print(f"Non-trainable params: {0}")
 
 
 class PINNModel:
@@ -246,3 +293,4 @@ class PINNModel:
         # # Compile the new model with the new optimizer
         # self_model.compile(optimizer=optimizer, loss='mse', metrics=['accuracy'])
         pass
+

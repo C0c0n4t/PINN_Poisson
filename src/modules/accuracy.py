@@ -16,7 +16,7 @@ class AccuracyCalc:
         self._dg = dg
         self._real_val = self._dg.real_pairs(grid)
         
-        if (self._dg.prediction_pairs(grid) != None):
+        if (not self._dg.prediction_pairs(grid) is []):
             self._pred_val = self._dg.prediction_pairs(grid).ravel()
         else:
             print("No predict function set")
